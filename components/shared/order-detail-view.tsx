@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Package, ShieldCheck, ExternalLink } from "lucide-react";
+import { ArrowLeft, Package, ShieldCheck, ExternalLink, Loader2 } from "lucide-react";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Timeline } from "@/components/shared/timeline";
 import { Card } from "@/components/ui/card";
@@ -10,8 +10,16 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { OrderActions } from "@/components/shared/order-actions";
 
 export function OrderDetailView({ id }: { id: string }) {
-  const { getOrderById } = useOrders();
+  const { getOrderById, isLoading } = useOrders();
   const order = getOrderById(id);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="size-6 animate-spin text-on-surface-variant" />
+      </div>
+    );
+  }
 
   if (!order) {
     return (

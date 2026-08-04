@@ -25,11 +25,11 @@ export function DisputeResponseSheet({
   const [open, setOpen] = useState(false);
   const [response, setResponse] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!response.trim()) return;
     // TODO: enviar evidências para a Trustless Work mediar a disputa no contrato de escrow.
-    respondToDispute(orderId, response.trim(), respondingAs);
+    await respondToDispute(orderId, response.trim(), respondingAs);
     setOpen(false);
   }
 

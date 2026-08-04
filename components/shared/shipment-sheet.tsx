@@ -19,10 +19,10 @@ export function ShipmentSheet({ orderId }: { orderId: string }) {
   const [open, setOpen] = useState(false);
   const [trackingCode, setTrackingCode] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     // TODO: notificar a Trustless Work da mudança de etapa do contrato de escrow.
-    markShipped(orderId, trackingCode.trim());
+    await markShipped(orderId, trackingCode.trim());
     setOpen(false);
   }
 

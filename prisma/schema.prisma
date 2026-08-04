@@ -1,0 +1,73 @@
+// Schema do banco de dados da Holdfy.
+//
+// Usa SQLite agora para rodar localmente sem precisar de nenhuma credencial de
+// nuvem. Para produção, troque o provider para "postgresql" e aponte
+// DATABASE_URL para o Supabase/Neon/etc. — o restante do schema não muda.
+//
+// Autenticação real de usuários (Privy) e a lógica de custódia (Trustless
+// Work / contratos Soroban na Stellar) ainda não estão conectadas: os campos
+// abaixo guardam o suficiente para o app funcionar de ponta a ponta com um
+// único usuário de demonstração, igual ao que já existia mockado no frontend.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// TODO: quando a Privy entrar, este model passa a refletir a sessão real
+// (id do usuário Privy, carteira Stellar abstraída) em vez de um usuário fixo.
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      String // "comprador" | "vendedor"
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id                String   @id @default(cuid())
+  displayId         String   @unique
+  status            String // OrderStatus: pago_custodia | concluido | em_disputa | retido | liberado | em_transito
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  counterpartyName  String
+  description       String
+  shippingCost      Float
+  total             Float
+  trackingCode      String?
+  disputeReason     String?
+  disputeOpenedBy   String? // "comprador" | "vendedor"
+  sellerResponse    String?
+  buyerResponse     String?
+  sourceUrl         String?
+  sourceMarketplace String?
+
+  items    OrderItem[]
+  timeline OrderTimelineStep[]
+}
+
+model OrderItem {
+  id       String @id @default(cuid())
+  orderId  String
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  name     String
+  imageUrl String?
+  quantity Int
+  price    Float
+}
+
+model OrderTimelineStep {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stepId      String // OrderTimelineStepId: pagamento_confirmado | confirmado_vendedor | em_transito | entregue
+  title       String
+  description String
+  timestamp   String?
+  state       String // OrderTimelineStepState: concluido | atual | pendente
+  sortOrder   Int
+}

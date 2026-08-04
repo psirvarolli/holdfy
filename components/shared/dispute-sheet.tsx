@@ -46,11 +46,11 @@ export function DisputeSheet({ orderId, perspective = "comprador" }: DisputeShee
       ? "O valor permanece retido em custódia enquanto a disputa é analisada. Conte o que aconteceu para que possamos mediar com o comprador."
       : "O valor continua retido em custódia enquanto a disputa é analisada. Conte o que aconteceu para que possamos mediar com o vendedor.";
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     // TODO: chamar Trustless Work para abrir disputa no contrato de escrow (Soroban/Stellar).
     const fullReason = details.trim() ? `${reason} — ${details.trim()}` : reason;
-    openDispute(orderId, fullReason, perspective);
+    await openDispute(orderId, fullReason, perspective);
     setOpen(false);
   }
 

@@ -22,11 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useOrders } from "@/lib/orders-context";
-import {
-  fetchMarketplaceListing,
-  isValidListingUrl,
-  type MarketplaceListing,
-} from "@/lib/marketplace";
+import { isValidListingUrl, type MarketplaceListing } from "@/lib/marketplace";
 
 type Step = "choice" | "link" | "manual";
 type FetchState = "idle" | "loading" | "done" | "error";
@@ -89,22 +85,29 @@ export function NewOrderSheet() {
       return;
     }
     setFetchState("loading");
-    // TODO: chamar um serviço real de scraping/parsing no backend (ver lib/marketplace.ts).
-    const result = await fetchMarketplaceListing(listingUrl);
-    setListing(result);
-    setItemName(result.title);
-    setPrice(String(result.price));
-    setShippingCost(String(result.shippingCost));
-    setFetchState("done");
+    try {
+      const res = await fetch("/api/marketplace/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: listingUrl }),
+      });
+      if (!res.ok) throw new Error("lookup failed");
+      const { listing: result } = (await res.json()) as { listing: MarketplaceListing };
+      setListing(result);
+      setItemName(result.title);
+      setPrice(String(result.price));
+      setShippingCost(String(result.shippingCost));
+      setFetchState("done");
+    } catch {
+      setFetchState("error");
+    }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isValid) return;
 
-    // TODO: chamar Trustless Work para criar o contrato de escrow (Soroban/Stellar)
-    // e a BlindPay para gerar o link de cobrança PIX correspondente.
-    const order = createOrder({
+    const order = await createOrder({
       counterpartyName: counterpartyName.trim(),
       itemName: itemName.trim(),
       price: priceValue,

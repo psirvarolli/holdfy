@@ -1,12 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { orders as seedOrders, getOrderById, getOrdersByStatus } from "@/lib/mocks/orders";
-import { formatTimelineTimestamp } from "@/lib/format";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Order, OrderStatus, UserRole } from "@/lib/types";
-
-const STORAGE_KEY = "holdfy-orders";
-const INITIAL_NEXT_ID = 9600;
 
 export interface NewOrderInput {
   counterpartyName: string;
@@ -19,163 +14,96 @@ export interface NewOrderInput {
 
 interface OrdersContextValue {
   orders: Order[];
+  isLoading: boolean;
   getOrderById: (id: string) => Order | undefined;
   getOrdersByStatus: (status?: OrderStatus) => Order[];
-  createOrder: (input: NewOrderInput) => Order;
-  confirmReceipt: (id: string) => void;
-  openDispute: (id: string, reason: string, openedBy: UserRole) => void;
-  markShipped: (id: string, trackingCode: string) => void;
-  respondToDispute: (id: string, response: string, respondedBy: UserRole) => void;
+  createOrder: (input: NewOrderInput) => Promise<Order>;
+  confirmReceipt: (id: string) => Promise<void>;
+  openDispute: (id: string, reason: string, openedBy: UserRole) => Promise<void>;
+  markShipped: (id: string, trackingCode: string) => Promise<void>;
+  respondToDispute: (id: string, response: string, respondedBy: UserRole) => Promise<void>;
 }
 
 const OrdersContext = createContext<OrdersContextValue | null>(null);
 
-export function OrdersProvider({ children }: { children: ReactNode }) {
-  const [orders, setOrders] = useState<Order[]>(seedOrders);
-  const [hydrated, setHydrated] = useState(false);
-  const nextId = useRef(INITIAL_NEXT_ID);
+async function postJson<T>(url: string, body?: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    throw new Error(`Falha na requisição para ${url}: ${res.status}`);
+  }
+  return res.json();
+}
 
-  // Reidrata pedidos criados/alterados em sessões anteriores (persistidos no
-  // localStorage) para que o estado mockado sobreviva a um refresh da página.
+export function OrdersProvider({ children }: { children: ReactNode }) {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as { orders: Order[]; nextId: number };
-        setOrders(parsed.orders);
-        nextId.current = parsed.nextId;
-      }
-    } catch {
-      // dados corrompidos no localStorage — mantém os dados semente
-    } finally {
-      setHydrated(true);
-    }
+    let cancelled = false;
+    fetch("/api/orders")
+      .then((res) => res.json())
+      .then((data: { orders: Order[] }) => {
+        if (!cancelled) setOrders(data.orders ?? []);
+      })
+      .catch(() => {
+        // TODO: exibir um estado de erro em vez de silenciar a falha.
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ orders, nextId: nextId.current }));
-  }, [orders, hydrated]);
-
-  function updateOrder(id: string, updater: (order: Order) => Order) {
-    setOrders((prev) => prev.map((order) => (order.id === id ? updater(order) : order)));
+  function upsertOrder(updated: Order) {
+    setOrders((prev) => {
+      const exists = prev.some((order) => order.id === updated.id);
+      return exists ? prev.map((order) => (order.id === updated.id ? updated : order)) : [updated, ...prev];
+    });
   }
 
-  function createOrder(input: NewOrderInput): Order {
-    const n = nextId.current++;
-    const now = new Date();
-    const newOrder: Order = {
-      id: `ord-${n}`,
-      displayId: `#${n}-BR`,
-      status: "pago_custodia",
-      createdAt: now.toISOString(),
-      counterpartyName: input.counterpartyName,
-      description: input.itemName,
-      items: [{ id: `item-${n}-1`, name: input.itemName, quantity: 1, price: input.price }],
-      shippingCost: input.shippingCost,
-      total: input.price + input.shippingCost,
-      sourceUrl: input.sourceUrl,
-      sourceMarketplace: input.sourceMarketplace,
-      timeline: [
-        {
-          id: "pagamento_confirmado",
-          title: "Pagamento Confirmado",
-          description: "O pagamento foi capturado e está retido na Holdfy.",
-          timestamp: formatTimelineTimestamp(now),
-          state: "concluido",
-        },
-        {
-          id: "confirmado_vendedor",
-          title: "Em Processamento",
-          description: "Aguardando o vendedor preparar o pedido para envio.",
-          timestamp: null,
-          state: "atual",
-        },
-        {
-          id: "em_transito",
-          title: "Em Trânsito",
-          description: "Aguardando despacho pelo vendedor.",
-          timestamp: null,
-          state: "pendente",
-        },
-        {
-          id: "entregue",
-          title: "Entregue",
-          description: "Aguardando confirmação de entrega para liberar o valor ao vendedor.",
-          timestamp: null,
-          state: "pendente",
-        },
-      ],
-    };
-    setOrders((prev) => [newOrder, ...prev]);
-    return newOrder;
+  async function createOrder(input: NewOrderInput): Promise<Order> {
+    const { order } = await postJson<{ order: Order }>("/api/orders", input);
+    upsertOrder(order);
+    return order;
   }
 
-  function confirmReceipt(id: string) {
-    updateOrder(id, (order) => ({
-      ...order,
-      status: "liberado",
-      timeline: order.timeline.map((step) => {
-        if (step.id === "entregue") {
-          return {
-            ...step,
-            state: "concluido",
-            description: "Recebimento confirmado. Valor liberado ao vendedor.",
-            timestamp: formatTimelineTimestamp(new Date()),
-          };
-        }
-        return step.state === "atual" ? { ...step, state: "concluido" } : step;
-      }),
-    }));
+  async function confirmReceipt(id: string) {
+    const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/confirm-receipt`);
+    upsertOrder(order);
   }
 
-  function openDispute(id: string, reason: string, openedBy: UserRole) {
-    updateOrder(id, (order) => ({
-      ...order,
-      status: "em_disputa",
-      disputeReason: reason,
-      disputeOpenedBy: openedBy,
-      sellerResponse: undefined,
-      buyerResponse: undefined,
-    }));
+  async function openDispute(id: string, reason: string, openedBy: UserRole) {
+    const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/dispute`, {
+      reason,
+      openedBy,
+    });
+    upsertOrder(order);
   }
 
-  function markShipped(id: string, trackingCode: string) {
-    updateOrder(id, (order) => ({
-      ...order,
-      status: "em_transito",
-      trackingCode: trackingCode || order.trackingCode,
-      timeline: order.timeline.map((step) => {
-        if (step.id === "confirmado_vendedor" && step.state === "atual") {
-          return { ...step, state: "concluido" };
-        }
-        if (step.id === "em_transito") {
-          return {
-            ...step,
-            state: "atual",
-            timestamp: formatTimelineTimestamp(new Date()),
-            description: trackingCode
-              ? `O pedido foi despachado. Rastreio: ${trackingCode}.`
-              : "O pedido foi despachado pelo vendedor.",
-          };
-        }
-        return step;
-      }),
-    }));
+  async function markShipped(id: string, trackingCode: string) {
+    const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/ship`, { trackingCode });
+    upsertOrder(order);
   }
 
-  function respondToDispute(id: string, response: string, respondedBy: UserRole) {
-    updateOrder(id, (order) =>
-      respondedBy === "vendedor"
-        ? { ...order, sellerResponse: response }
-        : { ...order, buyerResponse: response }
-    );
+  async function respondToDispute(id: string, response: string, respondedBy: UserRole) {
+    const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/dispute/respond`, {
+      response,
+      respondedBy,
+    });
+    upsertOrder(order);
   }
 
   const value: OrdersContextValue = {
     orders,
-    getOrderById: (id) => getOrderById(orders, id),
-    getOrdersByStatus: (status) => getOrdersByStatus(orders, status),
+    isLoading,
+    getOrderById: (id) => orders.find((order) => order.id === id || order.displayId === id),
+    getOrdersByStatus: (status) => (status ? orders.filter((order) => order.status === status) : orders),
     createOrder,
     confirmReceipt,
     openDispute,
