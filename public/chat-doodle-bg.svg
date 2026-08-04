@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360" viewBox="0 0 360 360">
+  <rect width="360" height="360" fill="#25BFA0"/>
+  <g fill="none" stroke="#5FD9C0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- star -->
+    <path d="M30 20 L34 30 L45 31 L37 38 L39 49 L30 43 L21 49 L23 38 L15 31 L26 30 Z"/>
+    <!-- heart -->
+    <path d="M110 30 C110 22 120 20 122 28 C124 20 134 22 134 30 C134 38 122 46 122 46 C122 46 110 38 110 30 Z"/>
+    <!-- cloud -->
+    <path d="M195 35 a10 10 0 0 1 19 -3 a8 8 0 0 1 10 8 a7 7 0 0 1 -1 14 h-30 a8 8 0 0 1 2 -19 Z"/>
+    <!-- music note -->
+    <path d="M270 15 v28 a7 7 0 1 1 -3 -5.6 V18 l14 -3 v24 a7 7 0 1 1 -3 -5.6 V12 Z"/>
+    <!-- envelope -->
+    <path d="M320 30 h32 v22 h-32 Z M320 30 l16 13 l16 -13"/>
+
+    <!-- speech bubble -->
+    <path d="M20 100 h40 a5 5 0 0 1 5 5 v16 a5 5 0 0 1 -5 5 h-24 l-9 9 v-9 h-7 a5 5 0 0 1 -5 -5 v-16 a5 5 0 0 1 5 -5 Z"/>
+    <!-- camera -->
+    <path d="M100 108 h34 v24 h-34 Z M108 108 l3 -6 h12 l3 6" /><circle cx="117" cy="120" r="7"/>
+    <!-- flower -->
+    <g>
+      <circle cx="200" cy="115" r="5"/>
+      <circle cx="192" cy="108" r="5"/>
+      <circle cx="208" cy="108" r="5"/>
+      <circle cx="192" cy="122" r="5"/>
+      <circle cx="208" cy="122" r="5"/>
+    </g>
+    <!-- coffee cup -->
+    <path d="M270 108 h24 v14 a12 12 0 0 1 -24 0 Z M294 112 h6 a5 5 0 0 1 0 10 h-6"/>
+    <path d="M275 100 q2 -4 0 -7 M282 100 q2 -4 0 -7 M289 100 q2 -4 0 -7"/>
+    <!-- lightning -->
+    <path d="M335 100 l-10 16 h8 l-6 14 l16 -18 h-8 Z"/>
+
+    <!-- balloon -->
+    <path d="M45 175 a14 16 0 1 1 0.1 0 Z M45 191 l-3 8 l6 0 Z"/>
+    <!-- paper plane -->
+    <path d="M100 168 l40 16 l-18 6 l-6 16 l-6 -14 Z M122 184 l-16 16"/>
+    <!-- crescent moon -->
+    <path d="M205 165 a16 16 0 1 0 0 32 a12 12 0 0 1 0 -32 Z"/>
+    <!-- sparkle -->
+    <path d="M280 165 v20 M270 175 h20 M273 168 l14 14 M287 168 l-14 14"/>
+    <!-- dots trio -->
+    <g>
+      <circle cx="330" cy="170" r="2.4"/>
+      <circle cx="340" cy="178" r="2.4"/>
+      <circle cx="330" cy="186" r="2.4"/>
+    </g>
+
+    <!-- bicycle -->
+    <g>
+      <circle cx="30" cy="250" r="12"/>
+      <circle cx="70" cy="250" r="12"/>
+      <path d="M30 250 l16 -22 h14 M46 228 l14 22 M60 250 h-14 l8 -14"/>
+    </g>
+    <!-- bell -->
+    <path d="M130 232 a12 12 0 0 1 24 0 v10 h-24 Z M136 244 a6 3 0 0 0 12 0"/>
+    <!-- book -->
+    <path d="M190 230 h20 v26 h-20 Z M210 230 h20 v26 h-20 Z M210 230 v26"/>
+    <!-- rocket -->
+    <path d="M270 260 q0 -30 12 -34 q12 4 12 34 Z M270 260 l-8 10 v-12 Z M294 260 l8 10 v-12 Z"/><circle cx="282" cy="238" r="4"/>
+    <!-- burger -->
+    <path d="M330 232 a18 8 0 0 1 36 0 Z M330 240 h36 M328 248 a18 6 0 0 0 40 0 Z"/>
+
+    <!-- planet -->
+    <circle cx="40" cy="310" r="10"/>
+    <ellipse cx="40" cy="310" rx="20" ry="6"/>
+    <!-- thumbs up -->
+    <path d="M95 320 v16 h-8 v-16 Z M95 320 l6 -14 a3 3 0 0 1 6 2 l-2 12 h10 a4 4 0 0 1 4 5 l-3 12 a5 5 0 0 1 -5 4 h-16 Z"/>
+    <!-- key -->
+    <circle cx="180" cy="312" r="8"/>
+    <path d="M186 318 l18 18 M198 330 l6 -6 M204 336 l6 -6"/>
+    <!-- calendar -->
+    <path d="M255 300 h28 v24 h-28 Z M255 308 h28 M261 296 v8 M277 296 v8"/>
+    <!-- monkey face -->
+    <circle cx="335" cy="312" r="14"/>
+    <circle cx="329" cy="309" r="2.4"/>
+    <circle cx="341" cy="309" r="2.4"/>
+    <path d="M330 318 q5 4 10 0"/>
+  </g>
+</svg>
