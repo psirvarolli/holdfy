@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { useOrders } from "@/lib/orders-context";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { OrderActions } from "@/components/shared/order-actions";
+import { EvidenceGallery } from "@/components/shared/evidence-gallery";
 
 export function OrderDetailView({ id }: { id: string }) {
   const { getOrderById, isLoading } = useOrders();
@@ -104,7 +105,7 @@ export function OrderDetailView({ id }: { id: string }) {
           </div>
           <div className="flex items-center justify-between text-body-md text-on-surface-variant">
             <span>Frete</span>
-            <span>{formatCurrency(order.shippingCost)}</span>
+            <span>{order.hasShipping ? formatCurrency(order.shippingCost) : "Produto digital"}</span>
           </div>
           <div className="flex items-center justify-between text-body-lg font-semibold text-on-surface">
             <span>Total</span>
@@ -112,6 +113,8 @@ export function OrderDetailView({ id }: { id: string }) {
           </div>
         </div>
       </Card>
+
+      <EvidenceGallery order={order} />
 
       <Card className="flex flex-col gap-3 border border-mint-teal/30 bg-mint-teal/10">
         <div className="flex items-center gap-2 text-primary">

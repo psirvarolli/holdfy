@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import {
   Sheet,
   SheetTrigger,
@@ -40,6 +40,8 @@ export function DisputeSheet({ orderId, perspective = "comprador" }: DisputeShee
   const reasons = perspective === "vendedor" ? SELLER_REASONS : BUYER_REASONS;
   const [reason, setReason] = useState(reasons[0]);
   const [details, setDetails] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const description =
     perspective === "vendedor"
@@ -48,10 +50,17 @@ export function DisputeSheet({ orderId, perspective = "comprador" }: DisputeShee
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO: chamar Trustless Work para abrir disputa no contrato de escrow (Soroban/Stellar).
-    const fullReason = details.trim() ? `${reason} — ${details.trim()}` : reason;
-    await openDispute(orderId, fullReason, perspective);
-    setOpen(false);
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const fullReason = details.trim() ? `${reason} — ${details.trim()}` : reason;
+      await openDispute(orderId, fullReason, perspective);
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao abrir a disputa.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -101,8 +110,11 @@ export function DisputeSheet({ orderId, perspective = "comprador" }: DisputeShee
             />
           </div>
 
-          <Button type="submit" variant="destructive" size="lg" className="mt-2">
-            Confirmar Disputa
+          {error ? <p className="text-label-sm text-error">{error}</p> : null}
+
+          <Button type="submit" variant="destructive" size="lg" className="mt-2" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
+            {isSubmitting ? "Enviando..." : "Confirmar Disputa"}
           </Button>
         </form>
       </SheetContent>

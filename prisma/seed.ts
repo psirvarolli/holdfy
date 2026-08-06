@@ -3,7 +3,50 @@ import { orders as mockOrders } from "../lib/mocks/orders";
 
 const prisma = new PrismaClient();
 
+// Planos de cobrança — cadastrados aqui, não editáveis pelo app (ver
+// lib/server/plans.ts). O preço do Pro é só um número (R$249) usado pra
+// montar o link de pagamento da InfinitePay na hora — diferente da Stripe,
+// não existe um "Price" cadastrado antecipadamente do lado de fora.
+const PLAN_SEEDS = [
+  {
+    slug: "starter",
+    name: "Starter",
+    monthlyPriceReais: 0,
+    feePercent: 5.0,
+    includedEscrows: null,
+    maxTxValueReais: 5000,
+    isNegotiated: false,
+  },
+  {
+    slug: "pro",
+    name: "Pro",
+    monthlyPriceReais: 249,
+    feePercent: 2.5,
+    includedEscrows: 10,
+    maxTxValueReais: 20000,
+    isNegotiated: false,
+  },
+  {
+    slug: "enterprise",
+    name: "Enterprise",
+    monthlyPriceReais: 0,
+    feePercent: 1.8,
+    includedEscrows: null,
+    maxTxValueReais: null,
+    isNegotiated: true,
+  },
+] as const;
+
 async function main() {
+  console.log("Cadastrando planos...");
+  for (const plan of PLAN_SEEDS) {
+    await prisma.plan.upsert({
+      where: { slug: plan.slug },
+      create: plan,
+      update: plan,
+    });
+  }
+
   console.log("Limpando dados existentes...");
   await prisma.orderTimelineStep.deleteMany();
   await prisma.orderItem.deleteMany();
@@ -11,7 +54,7 @@ async function main() {
   await prisma.user.deleteMany();
 
   console.log("Criando usuários de demonstração...");
-  // TODO: quando a Privy entrar, usuários reais substituem estes registros fixos.
+  // TODO: quando a Pollar entrar, usuários reais substituem estes registros fixos.
   await prisma.user.createMany({
     data: [
       { name: "Alex Silva", email: "alex@holdfy.com", role: "comprador" },

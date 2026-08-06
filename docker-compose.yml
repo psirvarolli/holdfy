@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: holdfy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: holdfy
+      POSTGRES_PASSWORD: s4l0-rS2611FS7NS
+      POSTGRES_DB: holdfy
+    ports:
+      - "5432:5432"
+    volumes:
+      - holdfy_pgdata:/var/lib/postgresql/data
+
+volumes:
+  holdfy_pgdata:

@@ -8,12 +8,14 @@ export interface User {
 }
 
 export type OrderStatus =
+  | "aguardando_pagamento"
   | "pago_custodia"
   | "concluido"
   | "em_disputa"
   | "retido"
   | "liberado"
-  | "em_transito";
+  | "em_transito"
+  | "cancelado";
 
 export type OrderTimelineStepId =
   | "pagamento_confirmado"
@@ -48,6 +50,10 @@ export interface Order {
   counterpartyAvatarUrl?: string;
   description: string;
   items: OrderItem[];
+  // Produtos digitais (ex: serviços, arquivos) não têm frete nem etapa de
+  // envio física — quando false, shippingCost é sempre 0 e o pedido pula
+  // direto de "pago" para o comprador poder confirmar o recebimento.
+  hasShipping: boolean;
   shippingCost: number;
   total: number;
   timeline: OrderTimelineStep[];
@@ -58,4 +64,68 @@ export interface Order {
   buyerResponse?: string;
   sourceUrl?: string;
   sourceMarketplace?: string;
+
+  // Trustless Work (escrow Soroban na Stellar).
+  sellerAddress?: string;
+  buyerAddress?: string;
+  escrowContractId?: string;
+  // Quanto USDC de fato foi (ou precisa ser) depositado no escrow — `total`
+  // continua em reais (preço de listagem); este é o valor convertido pela
+  // cotação do dia no momento do pagamento.
+  escrowAmountUsdc?: number;
+  disputeBuyerAmount?: number;
+  disputeSellerAmount?: number;
+  disputeResolvedAt?: string;
+  // Taxa da Holdfy realmente aplicada neste escrow (depende do plano do
+  // vendedor no momento do deploy) — undefined até o pedido ser pago.
+  appliedFeePercent?: number;
+
+  evidence: OrderEvidence[];
+}
+
+export type EvidenceStage = "envio" | "recebimento";
+export type EvidenceType = "foto" | "video";
+
+export interface OrderEvidence {
+  id: string;
+  orderId: string;
+  stage: EvidenceStage;
+  type: EvidenceType;
+  url: string;
+  uploadedBy: UserRole;
+  createdAt: string;
+}
+
+export type PlanSlug = "starter" | "pro" | "enterprise";
+
+export interface Plan {
+  slug: PlanSlug;
+  name: string;
+  monthlyPriceReais: number;
+  feePercent: number;
+  includedEscrows: number | null;
+  maxTxValueReais: number | null;
+  isNegotiated: boolean;
+}
+
+// Situação atual do plano de um vendedor — devolvido por /api/plans/status.
+// "active" enquanto currentPeriodEnd está no futuro; "expired" quando já
+// passou (o vendedor pagou algum dia, mas não renovou — volta a valer o
+// Starter até ele renovar); "none" quando nunca assinou nada.
+// `escrowsUsedThisMonth`/`includedEscrows` só fazem sentido pra planos com
+// cota mensal (hoje, só o Pro); undefined nos demais.
+export interface SellerPlanStatus {
+  plan: Plan;
+  status: "active" | "expired" | "none";
+  currentPeriodEnd?: string;
+  escrowsUsedThisMonth?: number;
+}
+
+export interface Notification {
+  id: string;
+  orderId: string;
+  orderDisplayId: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
 }

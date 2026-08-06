@@ -1,19 +1,39 @@
 "use client";
 
-import { ThumbsUp, CheckCircle2, Gavel, Clock, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { usePollar } from "@pollar/react";
+import { ThumbsUp, CheckCircle2, Gavel, Clock, ShieldCheck, Wallet, Loader2, ArrowDownToLine, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DisputeSheet } from "@/components/shared/dispute-sheet";
 import { ShipmentSheet } from "@/components/shared/shipment-sheet";
 import { DisputeResponseSheet } from "@/components/shared/dispute-response-sheet";
+import { EvidenceUploader } from "@/components/shared/evidence-uploader";
 import { useRole } from "@/lib/role-context";
 import { useOrders } from "@/lib/orders-context";
+import { useUsdcBalance } from "@/lib/pollar-balance";
+import { useBrlToUsdcPreview } from "@/lib/fx-client";
+import { formatCurrency } from "@/lib/format";
 import type { Order } from "@/lib/types";
 
 export function OrderActions({ order }: { order: Order }) {
   const { role } = useRole();
-  const { confirmReceipt } = useOrders();
+  const { payOrder, confirmReceipt, cancelOrder } = useOrders();
+  const { openRampModal } = usePollar();
+  const { available: usdcBalance, isLoading: isLoadingBalance, refresh: refreshBalance } = useUsdcBalance();
+  // Antes do escrow existir, `escrowAmountUsdc` ainda não foi travado — usa a
+  // prévia da cotação atual só para mostrar uma estimativa.
+  const { usdc: estimatedUsdc, isLoading: isLoadingEstimate } = useBrlToUsdcPreview(order.total);
+  const usdcNeeded = order.escrowAmountUsdc ?? estimatedUsdc;
+  const [isPaying, setIsPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
+  const isAwaitingPayment = order.status === "aguardando_pagamento";
+  const isCancelled = order.status === "cancelado";
   const isFinal = order.status === "concluido" || order.status === "liberado";
   const isDisputed = order.status === "em_disputa";
   const isShipped = order.status === "em_transito";
@@ -21,7 +41,72 @@ export function OrderActions({ order }: { order: Order }) {
   // disputas eram abertas pelo comprador antes desta funcionalidade existir.
   const disputeOpenedBy = order.disputeOpenedBy ?? "comprador";
 
+  async function handlePay() {
+    setIsPaying(true);
+    setPayError(null);
+    try {
+      await payOrder(order.id);
+    } catch (error) {
+      setPayError(error instanceof Error ? error.message : "Falha ao pagar o pedido.");
+    } finally {
+      setIsPaying(false);
+    }
+  }
+
+  async function handleConfirmReceipt() {
+    setIsConfirming(true);
+    setConfirmError(null);
+    try {
+      await confirmReceipt(order.id);
+    } catch (error) {
+      setConfirmError(error instanceof Error ? error.message : "Falha ao confirmar o recebimento.");
+    } finally {
+      setIsConfirming(false);
+    }
+  }
+
+  async function handleCancel() {
+    setIsCancelling(true);
+    setCancelError(null);
+    try {
+      await cancelOrder(order.id, role);
+    } catch (error) {
+      setCancelError(error instanceof Error ? error.message : "Falha ao cancelar o pedido.");
+    } finally {
+      setIsCancelling(false);
+    }
+  }
+
+  if (isCancelled) {
+    return (
+      <Card className="flex flex-col gap-2">
+        <h2 className="text-body-lg font-semibold text-on-surface">Ações do Pedido</h2>
+        <div className="flex items-center gap-2 rounded-md bg-surface-container-high p-4 text-on-surface-variant">
+          <XCircle className="size-5 shrink-0" />
+          <span className="text-body-md">Este pedido foi cancelado.</span>
+        </div>
+      </Card>
+    );
+  }
+
   if (role === "vendedor") {
+    if (isAwaitingPayment) {
+      return (
+        <Card className="flex flex-col gap-3">
+          <h2 className="text-body-lg font-semibold text-on-surface">Ações do Pedido</h2>
+          <div className="flex items-center gap-2 rounded-md bg-surface-container-high p-4 text-on-surface-variant">
+            <Wallet className="size-5 shrink-0" />
+            <span className="text-body-md">Aguardando o comprador pagar este pedido.</span>
+          </div>
+          <Button variant="outline" onClick={handleCancel} disabled={isCancelling}>
+            {isCancelling ? <Loader2 className="size-4 animate-spin" /> : <XCircle className="size-4" />}
+            {isCancelling ? "Cancelando..." : "Cancelar Pedido"}
+          </Button>
+          {cancelError ? <p className="text-label-sm text-error">{cancelError}</p> : null}
+        </Card>
+      );
+    }
+
     if (isDisputed) {
       const openedByMe = disputeOpenedBy === "vendedor";
       return (
@@ -87,6 +172,22 @@ export function OrderActions({ order }: { order: Order }) {
       );
     }
 
+    if (!order.hasShipping) {
+      return (
+        <Card className="flex flex-col gap-3">
+          <h2 className="text-body-lg font-semibold text-on-surface">Ações do Pedido</h2>
+          <div className="flex items-center gap-2 rounded-md bg-surface-container-high p-4 text-on-surface-variant">
+            <Clock className="size-5 shrink-0" />
+            <span className="text-body-md">
+              Produto digital — liberado automaticamente para o comprador. Aguardando ele
+              confirmar o recebimento para o valor ser liberado a você.
+            </span>
+          </div>
+          <DisputeSheet orderId={order.id} perspective="vendedor" />
+        </Card>
+      );
+    }
+
     return (
       <Card className="flex flex-col gap-3">
         <h2 className="text-body-lg font-semibold text-on-surface">Ações do Pedido</h2>
@@ -94,13 +195,60 @@ export function OrderActions({ order }: { order: Order }) {
           O pagamento já está protegido pela Holdfy. Prepare o pedido e marque como enviado
           assim que despachar.
         </p>
-        <ShipmentSheet orderId={order.id} />
+        <ShipmentSheet order={order} />
         <DisputeSheet orderId={order.id} perspective="vendedor" />
       </Card>
     );
   }
 
   // Comprador
+  if (isAwaitingPayment) {
+    const isChecking = isLoadingBalance || isLoadingEstimate || usdcNeeded === null;
+    const hasEnoughBalance = usdcNeeded !== null && usdcBalance >= usdcNeeded;
+    return (
+      <Card className="flex flex-col gap-3">
+        <h2 className="text-body-lg font-semibold text-on-surface">Ações do Pedido</h2>
+        <p className="text-body-md text-on-surface-variant">
+          Pague via Pix para que o valor de {formatCurrency(order.total)} fique protegido até
+          você confirmar o recebimento.
+        </p>
+
+        {isChecking ? (
+          <Button size="lg" disabled>
+            <Loader2 className="size-4 animate-spin" />
+            Verificando pagamento...
+          </Button>
+        ) : hasEnoughBalance ? (
+          <Button size="lg" onClick={handlePay} disabled={isPaying}>
+            {isPaying ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
+            {isPaying ? "Confirmando..." : "Confirmar Pagamento"}
+          </Button>
+        ) : (
+          <>
+            <Button size="lg" onClick={() => openRampModal()}>
+              <ArrowDownToLine className="size-4" />
+              Pagar via Pix
+            </Button>
+            <button
+              type="button"
+              onClick={() => refreshBalance()}
+              className="text-label-sm text-primary hover:underline"
+            >
+              Já paguei — atualizar
+            </button>
+          </>
+        )}
+        {payError ? <p className="text-label-sm text-error">{payError}</p> : null}
+
+        <Button variant="outline" onClick={handleCancel} disabled={isCancelling}>
+          {isCancelling ? <Loader2 className="size-4 animate-spin" /> : <XCircle className="size-4" />}
+          {isCancelling ? "Cancelando..." : "Cancelar Pedido"}
+        </Button>
+        {cancelError ? <p className="text-label-sm text-error">{cancelError}</p> : null}
+      </Card>
+    );
+  }
+
   if (isDisputed) {
     const openedByMe = disputeOpenedBy === "comprador";
     return (
@@ -156,14 +304,22 @@ export function OrderActions({ order }: { order: Order }) {
   return (
     <Card className="flex flex-col gap-3">
       <h2 className="text-body-lg font-semibold text-on-surface">Ações do Pedido</h2>
-      <Button
-        size="lg"
-        // TODO: chamar Trustless Work para liberar os fundos do contrato de escrow (Soroban/Stellar).
-        onClick={() => confirmReceipt(order.id)}
-      >
-        <ThumbsUp className="size-4" />
-        Confirmar Recebimento
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-label-sm text-on-surface-variant">
+          Foto ou vídeo do que você recebeu (opcional)
+        </label>
+        <p className="text-label-sm text-on-surface-variant/80">
+          Registre antes de confirmar — ajuda numa eventual disputa.
+        </p>
+        <EvidenceUploader order={order} stage="recebimento" uploadedBy="comprador" />
+      </div>
+
+      <Button size="lg" onClick={handleConfirmReceipt} disabled={isConfirming}>
+        {isConfirming ? <Loader2 className="size-4 animate-spin" /> : <ThumbsUp className="size-4" />}
+        {isConfirming ? "Confirmando..." : "Confirmar Recebimento"}
       </Button>
+      {confirmError ? <p className="text-label-sm text-error">{confirmError}</p> : null}
       <DisputeSheet orderId={order.id} perspective="comprador" />
       <p className="text-label-sm text-on-surface-variant">
         Confirme apenas se tiver recebido e testado o produto.

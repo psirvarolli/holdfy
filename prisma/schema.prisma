@@ -1,10 +1,11 @@
 // Schema do banco de dados da Holdfy.
 //
-// Usa SQLite agora para rodar localmente sem precisar de nenhuma credencial de
-// nuvem. Para produção, troque o provider para "postgresql" e aponte
-// DATABASE_URL para o Supabase/Neon/etc. — o restante do schema não muda.
+// Postgres — em dev, um container Docker local (ver README/docker-compose ou
+// `docker run` direto); em produção, aponte DATABASE_URL para o Neon/Supabase
+// escolhido na hospedagem. Antes disso era SQLite (arquivo único), trocado
+// porque não aguenta acesso simultâneo de verdade — ver auditoria pré-MVP.
 //
-// Autenticação real de usuários (Privy) e a lógica de custódia (Trustless
+// Autenticação real de usuários (Pollar) e a lógica de custódia (Trustless
 // Work / contratos Soroban na Stellar) ainda não estão conectadas: os campos
 // abaixo guardam o suficiente para o app funcionar de ponta a ponta com um
 // único usuário de demonstração, igual ao que já existia mockado no frontend.
@@ -14,12 +15,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// TODO: quando a Privy entrar, este model passa a refletir a sessão real
-// (id do usuário Privy, carteira Stellar abstraída) em vez de um usuário fixo.
+// TODO: quando a Pollar entrar, este model passa a refletir a sessão real
+// (id do usuário Pollar, carteira Stellar abstraída) em vez de um usuário fixo.
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -31,11 +32,18 @@ model User {
 model Order {
   id                String   @id @default(cuid())
   displayId         String   @unique
-  status            String // OrderStatus: pago_custodia | concluido | em_disputa | retido | liberado | em_transito
+  status            String // OrderStatus: aguardando_pagamento | pago_custodia | concluido | em_disputa | retido | liberado | em_transito
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   counterpartyName  String
   description       String
+  // Produtos digitais não têm frete nem etapa de envio física — o vendedor
+  // escolhe isso na criação do pedido (ver NewOrderSheet). Quando false,
+  // shippingCost fica travado em 0 e o milestone da Trustless Work é
+  // completado automaticamente pela própria Holdfy assim que o pagamento é
+  // confirmado, em vez de esperar o vendedor "marcar como enviado" — ver
+  // completeMilestoneAsPlatform em lib/server/trustless-work.ts.
+  hasShipping       Boolean  @default(true)
   shippingCost      Float
   total             Float
   trackingCode      String?
@@ -46,8 +54,36 @@ model Order {
   sourceUrl         String?
   sourceMarketplace String?
 
-  items    OrderItem[]
-  timeline OrderTimelineStep[]
+  // Trustless Work (escrow Soroban na Stellar). sellerAddress é capturado da
+  // carteira Pollar de quem cria o pedido; buyerAddress, da carteira Pollar
+  // de quem paga — ambos podem ser a mesma pessoa hoje, já que o app ainda
+  // usa um único usuário de demonstração alternando papel via RoleSwitch.
+  sellerAddress        String?
+  buyerAddress         String?
+  escrowContractId     String?
+  // Valor real em USDC depositado no escrow — convertido de `total` (R$) pela
+  // cotação do dia no momento em que o comprador paga (ver lib/server/fx-rate.ts).
+  // `total` continua sendo o preço de listagem em reais; este campo é quanto
+  // USDC de fato foi (ou precisa ser) colocado em custódia.
+  escrowAmountUsdc     Float?
+  disputeBuyerAmount   Float?
+  disputeSellerAmount  Float?
+  disputeResolvedAt    DateTime?
+  // Quando o escrow é implantado (deploy), não antes — usado pra contar quantos
+  // escrows um vendedor usou no mês corrente (ver lib/server/plans.ts). Não dá
+  // pra usar `createdAt` pra isso: o pedido pode ter sido criado num mês e só
+  // pago no seguinte.
+  escrowDeployedAt     DateTime?
+  // A taxa da Holdfy realmente aplicada nesse escrow no momento do deploy —
+  // guardada aqui pra transparência/auditoria, já que depende do plano do
+  // vendedor naquele instante e não deve mudar retroativamente se ele trocar
+  // de plano depois.
+  appliedFeePercent    Float?
+
+  items         OrderItem[]
+  timeline      OrderTimelineStep[]
+  notifications Notification[]
+  evidence      OrderEvidence[]
 }
 
 model OrderItem {
@@ -70,4 +106,89 @@ model OrderTimelineStep {
   timestamp   String?
   state       String // OrderTimelineStepState: concluido | atual | pendente
   sortOrder   Int
+}
+
+// Notificação in-app — não depende de nenhum serviço externo (e-mail exigiria
+// uma conta num provedor tipo Resend, que ainda não existe). `recipientRole`
+// segue o mesmo padrão simplificado do resto do app (comprador/vendedor via
+// RoleSwitch), já que ainda não há contas de usuário reais — ver TODO no
+// model User acima.
+model Notification {
+  id            String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  recipientRole String // "comprador" | "vendedor"
+  message       String
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([recipientRole, read])
+}
+
+// Evidência de envio/recebimento — foto e vídeo que vendedor (embalando) e
+// comprador (recebendo) registram, para dar suporte a uma disputa futura.
+// Guardado no Vercel Blob; aqui só fica a URL pública do arquivo.
+model OrderEvidence {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stage      String // "envio" | "recebimento"
+  type       String // "foto" | "video"
+  url        String
+  uploadedBy String // "comprador" | "vendedor"
+  createdAt  DateTime @default(now())
+
+  @@index([orderId, stage])
+}
+
+// Planos de cobrança da Holdfy — mensalidade + taxa por escrow, cadastrados
+// via seed (não editáveis pelo app). "starter" é o plano padrão implícito:
+// todo vendedor sem SellerSubscription ativa cai nele automaticamente (ver
+// getActivePlanForSeller em lib/server/plans.ts) — por isso não precisa de
+// nenhum pagamento real pra existir.
+model Plan {
+  id                String   @id @default(cuid())
+  slug              String   @unique // "starter" | "pro" | "enterprise"
+  name              String
+  monthlyPriceReais Float // mensalidade em R$; 0 pro Starter, negociado (não cobrado por aqui) no Enterprise
+  feePercent        Float // taxa da Holdfy sobre cada escrow, neste plano
+  // Quantos escrows por mês a mensalidade já cobre antes de cair na taxa do
+  // Starter (ver resolveFeeForNewEscrow) — null = sem contagem (Starter é
+  // sempre pay-as-you-go; Enterprise é sempre ilimitado).
+  includedEscrows   Int?
+  // Valor máximo (R$) de um único pedido nesse plano — null = sem limite.
+  maxTxValueReais   Float?
+  // Enterprise: sem checkout automático, o botão na tela leva pra "Fale
+  // conosco" e a ativação é manual depois da negociação.
+  isNegotiated      Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  subscriptions SellerSubscription[]
+}
+
+// Acesso de um vendedor a um plano pago — identificado pela carteira Stellar
+// (sellerAddress), já que o app ainda não tem contas de usuário reais (mesma
+// limitação anotada no model User). Vendedores no Starter não têm linha
+// aqui: ausência de registro = Starter, por design.
+//
+// A InfinitePay não tem conceito de "assinatura" nem cobra automaticamente
+// todo mês (diferente da Stripe) — cada pagamento é um link avulso. Por
+// isso, em vez de espelhar um "status" que viria de webhooks de assinatura,
+// este model guarda só até quando o último pagamento cobre
+// (`currentPeriodEnd`) e o vendedor renova manualmente na tela de Planos.
+// "Ativo" é sempre calculado comparando `currentPeriodEnd` com agora — nunca
+// um campo separado que pudesse ficar desatualizado.
+model SellerSubscription {
+  id               String   @id @default(cuid())
+  sellerAddress    String   @unique
+  planId           String
+  plan             Plan     @relation(fields: [planId], references: [id])
+  currentPeriodEnd DateTime
+  // Referências do último pagamento confirmado na InfinitePay — úteis pra
+  // auditoria/suporte, não usadas pra decidir se o plano está ativo.
+  lastInvoiceSlug  String?
+  lastOrderNsu     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }

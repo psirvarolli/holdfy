@@ -1,4 +1,4 @@
-import { Shield, CheckCircle2, Gavel, Clock, Truck } from "lucide-react";
+import { Shield, CheckCircle2, Gavel, Clock, Truck, Wallet, XCircle } from "lucide-react";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import type { OrderStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -7,12 +7,14 @@ const STATUS_CONFIG: Record<
   OrderStatus,
   { label: string; icon: React.ComponentType<{ className?: string }>; variant: BadgeProps["variant"] }
 > = {
+  aguardando_pagamento: { label: "Aguardando Pagamento", icon: Wallet, variant: "tertiary" },
   pago_custodia: { label: "Pago em Custódia", icon: Shield, variant: "mint" },
   concluido: { label: "Concluído", icon: CheckCircle2, variant: "mint" },
   liberado: { label: "Liberado", icon: CheckCircle2, variant: "mint" },
   retido: { label: "Retido", icon: Clock, variant: "tertiary" },
   em_transito: { label: "Em Trânsito", icon: Truck, variant: "neutral" },
   em_disputa: { label: "Em Disputa", icon: Gavel, variant: "error" },
+  cancelado: { label: "Cancelado", icon: XCircle, variant: "neutral" },
 };
 
 interface StatusBadgeProps extends Omit<BadgeProps, "variant"> {

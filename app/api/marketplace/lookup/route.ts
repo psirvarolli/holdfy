@@ -1,14 +1,22 @@
 import { NextResponse } from "next/server";
-import { fetchMarketplaceListing, isValidListingUrl } from "@/lib/marketplace";
+import { z } from "zod";
+import { fetchMarketplaceListing, MarketplaceFetchError } from "@/lib/server/marketplace";
+import { parseJsonBody } from "@/lib/server/validation";
+
+const schema = z.object({ url: z.string().url() });
 
 export async function POST(request: Request) {
-  const { url } = (await request.json()) as { url?: string };
+  const parsed = await parseJsonBody(request, schema);
+  if ("error" in parsed) return parsed.error;
 
-  if (!url || !isValidListingUrl(url)) {
-    return NextResponse.json({ error: "URL inválida" }, { status: 400 });
+  try {
+    const listing = await fetchMarketplaceListing(parsed.data.url);
+    return NextResponse.json({ listing });
+  } catch (error) {
+    const message =
+      error instanceof MarketplaceFetchError
+        ? error.message
+        : "Não consegui buscar os dados desse link — preencha os dados manualmente.";
+    return NextResponse.json({ error: message }, { status: 422 });
   }
-
-  // TODO: substituir por um serviço real de scraping/parsing (ver lib/marketplace.ts).
-  const listing = await fetchMarketplaceListing(url);
-  return NextResponse.json({ listing });
 }

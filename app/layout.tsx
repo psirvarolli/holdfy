@@ -4,6 +4,9 @@ import { RoleProvider } from "@/lib/role-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { LocaleProvider } from "@/lib/locale-context";
 import { OrdersProvider } from "@/lib/orders-context";
+import { NotificationsProvider } from "@/lib/notifications-context";
+import { PollarProvider } from "@/lib/pollar-provider";
+import "@pollar/react/styles.css";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -37,9 +40,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="bg-background text-on-background font-sans">
         <ThemeProvider>
           <LocaleProvider>
-            <RoleProvider>
-              <OrdersProvider>{children}</OrdersProvider>
-            </RoleProvider>
+            <PollarProvider>
+              <RoleProvider>
+                <OrdersProvider>
+                  <NotificationsProvider>{children}</NotificationsProvider>
+                </OrdersProvider>
+              </RoleProvider>
+            </PollarProvider>
           </LocaleProvider>
         </ThemeProvider>
       </body>

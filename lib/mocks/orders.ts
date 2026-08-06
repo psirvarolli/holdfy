@@ -3,9 +3,9 @@
 // A lógica de custódia (retenção, liberação e disputa dos fundos) roda on-chain
 // em smart contracts Soroban na rede Stellar. Esses contratos são uma camada
 // separada, fora do escopo deste repositório — o frontend apenas consome os
-// resultados via a Trustless Work (motor de escrow) e a BlindPay (rampa
-// PIX <-> stablecoin). Os TODOs abaixo marcam onde essas integrações reais
-// vão substituir os dados mockados.
+// resultados via a Trustless Work (motor de escrow) e a Pollar (login, carteira
+// Stellar embutida e rampa PIX <-> USDC). Os TODOs abaixo marcam onde essas
+// integrações reais vão substituir os dados mockados.
 
 import type { Order } from "@/lib/types";
 
@@ -27,6 +27,7 @@ export const orders: Order[] = [
         price: 450,
       },
     ],
+    hasShipping: true,
     shippingCost: 45,
     total: 495,
     timeline: [
@@ -60,6 +61,7 @@ export const orders: Order[] = [
         state: "pendente",
       },
     ],
+    evidence: [],
   },
   {
     id: "ord-7392",
@@ -82,6 +84,7 @@ export const orders: Order[] = [
         price: 899,
       },
     ],
+    hasShipping: true,
     shippingCost: 45,
     total: 6443,
     timeline: [
@@ -116,6 +119,7 @@ export const orders: Order[] = [
         state: "pendente",
       },
     ],
+    evidence: [],
   },
   {
     id: "ord-4829",
@@ -125,9 +129,11 @@ export const orders: Order[] = [
     counterpartyName: "TechStore Brasil",
     description: "Pedido #4829",
     items: [{ id: "item-4829-1", name: "Pedido #4829", quantity: 1, price: 3500 }],
+    hasShipping: true,
     shippingCost: 0,
     total: 3500,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-4812",
@@ -137,9 +143,11 @@ export const orders: Order[] = [
     counterpartyName: "Boutique Elegance",
     description: "Pedido #4812",
     items: [{ id: "item-4812-1", name: "Pedido #4812", quantity: 1, price: 450 }],
+    hasShipping: true,
     shippingCost: 0,
     total: 450,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-4799",
@@ -149,9 +157,11 @@ export const orders: Order[] = [
     counterpartyName: "Móveis & Cia",
     description: "Pedido #4799",
     items: [{ id: "item-4799-1", name: "Pedido #4799", quantity: 1, price: 1200 }],
+    hasShipping: true,
     shippingCost: 0,
     total: 1200,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-9821",
@@ -161,9 +171,11 @@ export const orders: Order[] = [
     counterpartyName: "TechStore BR",
     description: "MacBook Pro M3",
     items: [{ id: "item-9821-1", name: "MacBook Pro M3", quantity: 1, price: 14500 }],
+    hasShipping: true,
     shippingCost: 0,
     total: 14500,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-9810",
@@ -180,9 +192,11 @@ export const orders: Order[] = [
         price: 8200,
       },
     ],
+    hasShipping: true,
     shippingCost: 0,
     total: 8200,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-9755",
@@ -192,9 +206,11 @@ export const orders: Order[] = [
     counterpartyName: "AudioCenter",
     description: "Sony WH-1000XM5",
     items: [{ id: "item-9755-1", name: "Sony WH-1000XM5", quantity: 1, price: 2100 }],
+    hasShipping: true,
     shippingCost: 0,
     total: 2100,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-0992",
@@ -204,9 +220,11 @@ export const orders: Order[] = [
     counterpartyName: "TechCorp Brasil",
     description: "Consultoria Tech",
     items: [{ id: "item-0992-1", name: "Consultoria Tech", quantity: 1, price: 12500 }],
+    hasShipping: true,
     shippingCost: 0,
     total: 12500,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-0985",
@@ -216,9 +234,11 @@ export const orders: Order[] = [
     counterpartyName: "StartupX",
     description: "Design System",
     items: [{ id: "item-0985-1", name: "Design System", quantity: 1, price: 8200 }],
+    hasShipping: true,
     shippingCost: 0,
     total: 8200,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-0971",
@@ -228,9 +248,11 @@ export const orders: Order[] = [
     counterpartyName: "Agência Y",
     description: "Campanha Ads",
     items: [{ id: "item-0971-1", name: "Campanha Ads", quantity: 1, price: 4500 }],
+    hasShipping: true,
     shippingCost: 0,
     total: 4500,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-0955",
@@ -240,9 +262,11 @@ export const orders: Order[] = [
     counterpartyName: "Padaria Central",
     description: "Site Institucional",
     items: [{ id: "item-0955-1", name: "Site Institucional", quantity: 1, price: 3000 }],
+    hasShipping: true,
     shippingCost: 0,
     total: 3000,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-99382",
@@ -254,9 +278,11 @@ export const orders: Order[] = [
     items: [
       { id: "item-99382-1", name: "Website Redesign UI/UX", quantity: 1, price: 4500 },
     ],
+    hasShipping: true,
     shippingCost: 0,
     total: 4500,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-88214",
@@ -268,9 +294,11 @@ export const orders: Order[] = [
     items: [
       { id: "item-88214-1", name: "Custom API Integration", quantity: 1, price: 2800 },
     ],
+    hasShipping: true,
     shippingCost: 0,
     total: 2800,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-99105",
@@ -282,9 +310,11 @@ export const orders: Order[] = [
     items: [
       { id: "item-99105-1", name: "Server Migration Services", quantity: 1, price: 12000 },
     ],
+    hasShipping: true,
     shippingCost: 0,
     total: 12000,
     timeline: [],
+    evidence: [],
   },
   {
     id: "ord-99411",
@@ -296,9 +326,11 @@ export const orders: Order[] = [
     items: [
       { id: "item-99411-1", name: "Social Media Campaign", quantity: 1, price: 1500 },
     ],
+    hasShipping: true,
     shippingCost: 0,
     total: 1500,
     timeline: [],
+    evidence: [],
   },
 ];
 

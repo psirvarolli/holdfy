@@ -1,5 +1,33 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Banco de dados (Postgres)
+
+O app usa Postgres via Prisma. Em desenvolvimento, sobe um container local com
+Docker Compose:
+
+```bash
+docker compose up -d       # sobe o Postgres local (uma vez só, fica rodando)
+npx prisma migrate deploy  # aplica as migrações
+npx prisma db seed         # popula com dados de demonstração
+```
+
+A connection string já está em `.env` (`DATABASE_URL`), apontando para esse
+container (`localhost:5432`). Em produção, troque só essa URL pela do
+Neon/Supabase/etc. escolhido na hospedagem — o schema e o resto do código não
+mudam.
+
+## Testes
+
+```bash
+npm test
+```
+
+Cobre o caminho crítico (pagar → enviar → confirmar recebimento → liberar) e
+as peças de segurança (login do admin, limite de tentativas, validação de
+entrada, conversão de câmbio) com Vitest — sem depender da Trustless Work,
+Pollar ou do banco de verdade (tudo mockado). Ficam em arquivos
+`*.test.ts` ao lado do código que testam, dentro de `lib/server/`.
+
 ## Getting Started
 
 First, run the development server:

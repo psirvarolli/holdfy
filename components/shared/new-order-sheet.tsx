@@ -2,15 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Plus,
-  Link2,
-  PenLine,
-  Loader2,
-  CheckCircle2,
-  ExternalLink,
-  ArrowLeft,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   Sheet,
   SheetTrigger,
@@ -22,85 +14,37 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useOrders } from "@/lib/orders-context";
-import { isValidListingUrl, type MarketplaceListing } from "@/lib/marketplace";
+import { cn } from "@/lib/utils";
 
-type Step = "choice" | "link" | "manual";
-type FetchState = "idle" | "loading" | "done" | "error";
-
-const CHOICES: {
-  step: Extract<Step, "link" | "manual">;
-  icon: typeof Link2;
-  title: string;
-  description: string;
-  cta: string;
-}[] = [
-  {
-    step: "link",
-    icon: Link2,
-    title: "Importar de Anúncio",
-    description: "Cole o link de um anúncio e a Holdfy preenche os dados automaticamente.",
-    cta: "Importar Link",
-  },
-  {
-    step: "manual",
-    icon: PenLine,
-    title: "Criar Manualmente",
-    description: "Preencha você mesmo a descrição, o valor e o frete do pedido.",
-    cta: "Preencher Manualmente",
-  },
-];
-
+// A importação automática de anúncios (Mercado Livre, OLX, AliExpress...)
+// existe em lib/marketplace.ts + lib/server/marketplace.ts + a rota
+// /api/marketplace/lookup, testada e funcionando tecnicamente — mas hoje os
+// grandes marketplaces bloqueiam a busca automática (Mercado Livre, Magazine
+// Luiza e OLX recusam a conexão; a AliExpress só carrega os dados via
+// JavaScript no navegador da pessoa, não no HTML que o servidor recebe). A
+// única forma confiável testada é a API oficial do Mercado Livre, que exige
+// criar um app de desenvolvedor lá — combinamos deixar isso para depois. Por
+// ora, o formulário vai direto para o preenchimento manual.
 export function NewOrderSheet() {
   const router = useRouter();
   const { createOrder } = useOrders();
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<Step>("choice");
-
-  const [listingUrl, setListingUrl] = useState("");
-  const [fetchState, setFetchState] = useState<FetchState>("idle");
-  const [listing, setListing] = useState<MarketplaceListing | null>(null);
 
   const [counterpartyName, setCounterpartyName] = useState("");
   const [itemName, setItemName] = useState("");
   const [price, setPrice] = useState("");
+  const [hasShipping, setHasShipping] = useState(true);
   const [shippingCost, setShippingCost] = useState("");
 
   const priceValue = Number(price.replace(",", "."));
   const isValid = counterpartyName.trim().length > 0 && itemName.trim().length > 0 && priceValue > 0;
 
   function resetForm() {
-    setStep("choice");
-    setListingUrl("");
-    setFetchState("idle");
-    setListing(null);
     setCounterpartyName("");
     setItemName("");
     setPrice("");
+    setHasShipping(true);
     setShippingCost("");
-  }
-
-  async function handleFetchListing() {
-    if (!isValidListingUrl(listingUrl)) {
-      setFetchState("error");
-      return;
-    }
-    setFetchState("loading");
-    try {
-      const res = await fetch("/api/marketplace/lookup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: listingUrl }),
-      });
-      if (!res.ok) throw new Error("lookup failed");
-      const { listing: result } = (await res.json()) as { listing: MarketplaceListing };
-      setListing(result);
-      setItemName(result.title);
-      setPrice(String(result.price));
-      setShippingCost(String(result.shippingCost));
-      setFetchState("done");
-    } catch {
-      setFetchState("error");
-    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -111,9 +55,8 @@ export function NewOrderSheet() {
       counterpartyName: counterpartyName.trim(),
       itemName: itemName.trim(),
       price: priceValue,
-      shippingCost: Number(shippingCost.replace(",", ".")) || 0,
-      sourceUrl: listing ? listingUrl : undefined,
-      sourceMarketplace: listing?.marketplace,
+      hasShipping,
+      shippingCost: hasShipping ? Number(shippingCost.replace(",", ".")) || 0 : 0,
     });
 
     resetForm();
@@ -139,172 +82,103 @@ export function NewOrderSheet() {
         <SheetHeader>
           <SheetTitle>Novo Pedido</SheetTitle>
           <SheetDescription>
-            {step === "choice"
-              ? "Como você quer criar essa cobrança protegida em custódia?"
-              : "O comprador paga via Pix e o valor só é liberado após a confirmação de recebimento."}
+            O comprador paga e o valor fica retido até a confirmação de recebimento.
           </SheetDescription>
         </SheetHeader>
 
-        {step === "choice" ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {CHOICES.map((choice) => (
-              <button
-                key={choice.step}
-                type="button"
-                onClick={() => setStep(choice.step)}
-                className="flex flex-col items-center gap-3 rounded-lg border border-card-border bg-card p-6 text-center transition-colors hover:border-primary"
-              >
-                <div className="flex size-14 items-center justify-center rounded-full bg-mint-teal/15 text-primary">
-                  <choice.icon className="size-6" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-body-lg font-semibold text-on-surface">{choice.title}</h3>
-                  <p className="text-label-sm text-on-surface-variant">{choice.description}</p>
-                </div>
-                <span className="mt-2 inline-flex h-9 items-center justify-center rounded-md bg-mint-teal px-4 text-label-md text-deep-carbon">
-                  {choice.cta}
-                </span>
-              </button>
-            ))}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="counterpartyName" className="text-label-sm text-on-surface-variant">
+              Nome do comprador
+            </label>
+            <Input
+              id="counterpartyName"
+              value={counterpartyName}
+              onChange={(e) => setCounterpartyName(e.target.value)}
+              placeholder="Ex: Mariana Costa"
+              required
+            />
           </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <button
-              type="button"
-              onClick={() => setStep("choice")}
-              className="flex w-fit items-center gap-2 text-label-sm text-on-surface-variant hover:text-on-surface"
-            >
-              <ArrowLeft className="size-4" />
-              Voltar
-            </button>
 
-            {step === "link" ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="listingUrl" className="text-label-sm text-on-surface-variant">
-                    Link do anúncio (Mercado Livre, Shopee, Amazon, OLX...)
-                  </label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Link2 className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-on-surface-variant" />
-                      <Input
-                        id="listingUrl"
-                        value={listingUrl}
-                        onChange={(e) => {
-                          setListingUrl(e.target.value);
-                          setFetchState("idle");
-                        }}
-                        placeholder="https://..."
-                        className="pl-10"
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={handleFetchListing}
-                      disabled={fetchState === "loading" || listingUrl.trim().length === 0}
-                    >
-                      {fetchState === "loading" ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        "Buscar"
-                      )}
-                    </Button>
-                  </div>
-                  {fetchState === "error" ? (
-                    <p className="text-label-sm text-error">Cole um link válido para continuar.</p>
-                  ) : null}
-                  {fetchState === "loading" ? (
-                    <p className="text-label-sm text-on-surface-variant">
-                      Buscando informações do anúncio...
-                    </p>
-                  ) : null}
-                </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="itemName" className="text-label-sm text-on-surface-variant">
+              Descrição do produto ou serviço
+            </label>
+            <Input
+              id="itemName"
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+              placeholder="Ex: Consultoria de UX"
+              required
+            />
+          </div>
 
-                {listing ? (
-                  <div className="flex flex-col gap-2 rounded-md border border-mint-teal/30 bg-mint-teal/10 p-3">
-                    <div className="flex items-center gap-2 text-primary">
-                      <CheckCircle2 className="size-4 shrink-0" />
-                      <span className="text-label-sm font-semibold">
-                        Importado do {listing.marketplace}
-                      </span>
-                    </div>
-                    <p className="text-label-sm text-on-surface-variant">{listing.description}</p>
-                    <a
-                      href={listingUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex w-fit items-center gap-1 text-label-sm text-primary hover:underline"
-                    >
-                      Ver anúncio original
-                      <ExternalLink className="size-3.5" />
-                    </a>
-                  </div>
-                ) : null}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-sm text-on-surface-variant">Tipo de produto</label>
+            <div className="flex items-center gap-1 rounded-full bg-surface-container-high p-1">
+              {(
+                [
+                  { value: true, label: "Físico" },
+                  { value: false, label: "Digital" },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={String(option.value)}
+                  type="button"
+                  onClick={() => setHasShipping(option.value)}
+                  className={cn(
+                    "flex-1 rounded-full px-3 py-1.5 text-label-sm transition-colors",
+                    hasShipping === option.value
+                      ? "bg-mint-teal text-deep-carbon"
+                      : "text-on-surface-variant hover:text-on-surface"
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {!hasShipping ? (
+              <p className="text-label-sm text-on-surface-variant">
+                Produto digital: sem frete e sem etapa de envio — o pedido vai direto para o
+                comprador confirmar o recebimento assim que pagar.
+              </p>
+            ) : null}
+          </div>
+
+          <div className={cn("grid gap-3", hasShipping ? "grid-cols-2" : "grid-cols-1")}>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="price" className="text-label-sm text-on-surface-variant">
+                Valor (R$)
+              </label>
+              <Input
+                id="price"
+                inputMode="decimal"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="0,00"
+                required
+              />
+            </div>
+            {hasShipping ? (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="shippingCost" className="text-label-sm text-on-surface-variant">
+                  Frete (R$)
+                </label>
+                <Input
+                  id="shippingCost"
+                  inputMode="decimal"
+                  value={shippingCost}
+                  onChange={(e) => setShippingCost(e.target.value)}
+                  placeholder="0,00"
+                />
               </div>
             ) : null}
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="counterpartyName" className="text-label-sm text-on-surface-variant">
-                  Nome do comprador
-                </label>
-                <Input
-                  id="counterpartyName"
-                  value={counterpartyName}
-                  onChange={(e) => setCounterpartyName(e.target.value)}
-                  placeholder="Ex: Mariana Costa"
-                  required
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="itemName" className="text-label-sm text-on-surface-variant">
-                  Descrição do produto ou serviço
-                </label>
-                <Input
-                  id="itemName"
-                  value={itemName}
-                  onChange={(e) => setItemName(e.target.value)}
-                  placeholder="Ex: Consultoria de UX"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="price" className="text-label-sm text-on-surface-variant">
-                    Valor (R$)
-                  </label>
-                  <Input
-                    id="price"
-                    inputMode="decimal"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    placeholder="0,00"
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="shippingCost" className="text-label-sm text-on-surface-variant">
-                    Frete (R$)
-                  </label>
-                  <Input
-                    id="shippingCost"
-                    inputMode="decimal"
-                    value={shippingCost}
-                    onChange={(e) => setShippingCost(e.target.value)}
-                    placeholder="0,00"
-                  />
-                </div>
-              </div>
-
-              <Button type="submit" size="lg" disabled={!isValid} className="mt-2">
-                Gerar cobrança Pix
-              </Button>
-            </form>
           </div>
-        )}
+
+          <Button type="submit" size="lg" disabled={!isValid} className="mt-2">
+            Criar Pedido
+          </Button>
+        </form>
       </SheetContent>
     </Sheet>
   );
