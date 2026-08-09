@@ -7,7 +7,8 @@ import {
   buildApproveMilestone,
   buildReleaseFunds as twBuildReleaseFunds,
   buildDisputeEscrow,
-  resolveDisputeAsPlatform,
+  buildResolveDisputeTransaction as twBuildResolveDisputeTransaction,
+  submitSignedTransaction,
   completeMilestoneAsPlatform,
   waitForEscrowState,
 } from "@/lib/server/trustless-work";
@@ -39,6 +40,7 @@ export interface NewOrderInput {
   sourceUrl?: string;
   sourceMarketplace?: string;
   sellerAddress?: string;
+  buyerPhone?: string;
 }
 
 type OrderWithRelations = DbOrder & {
@@ -56,6 +58,7 @@ function toApiOrder(order: OrderWithRelations): Order {
     status: order.status as OrderStatus,
     createdAt: order.createdAt.toISOString(),
     counterpartyName: order.counterpartyName,
+    buyerPhone: order.buyerPhone ?? undefined,
     description: order.description,
     items: order.items.map((item) => ({
       id: item.id,
@@ -128,6 +131,18 @@ export async function listOrders(): Promise<Order[]> {
 export async function getOrder(id: string): Promise<Order | null> {
   const order = await findByIdOrDisplayId(id);
   return order ? toApiOrder(order) : null;
+}
+
+// Usado pelo bot de WhatsApp (repositório separado) para "Meus Pedidos" —
+// lista os pedidos em que o número deu como comprador. Não cobre pedidos em
+// que a pessoa é vendedora, já que Order não tem um campo sellerPhone hoje.
+export async function findOrdersByBuyerPhone(buyerPhone: string): Promise<Order[]> {
+  const orders = await prisma.order.findMany({
+    where: { buyerPhone },
+    include: includeRelations,
+    orderBy: { createdAt: "desc" },
+  });
+  return orders.map(toApiOrder);
 }
 
 // Produto físico tem 4 etapas (inclui despacho/rastreio); produto digital
@@ -222,6 +237,7 @@ export async function createOrder(input: NewOrderInput): Promise<Order> {
       status: "aguardando_pagamento",
       createdAt: now,
       counterpartyName: input.counterpartyName,
+      buyerPhone: input.buyerPhone,
       description: input.itemName,
       hasShipping: input.hasShipping,
       shippingCost,
@@ -620,27 +636,53 @@ export async function respondToDispute(
   return getOrder(order.id);
 }
 
-// Resolução de disputa: só a Holdfy decide (papel disputeResolver), por isso
-// assina e envia tudo no servidor — não precisa de nenhuma ação do
-// comprador/vendedor no cliente. buyerAmount + sellerAmount devem somar o
-// valor total retido no escrow (a Trustless Work rejeita se não bater).
-export async function resolveDisputeAdmin(
-  id: string,
-  buyerAmount: number,
-  sellerAmount: number
-): Promise<Order | null> {
-  const order = await findByIdOrDisplayId(id);
-  if (!order) return null;
+// Resolução de disputa exige 2 assinaturas na conta disputeResolver (a do
+// servidor + a pessoal de quem opera o painel admin, via Freighter) — nenhuma
+// das duas sozinha move o dinheiro retido. Por isso virou 2 passos: build
+// monta a transação e já aplica a assinatura do servidor; submit só entra
+// depois que o admin colheu a segunda assinatura no navegador.
+//
+// buyerAmount + sellerAmount devem somar o valor total retido no escrow (a
+// Trustless Work rejeita se não bater) — validado nos dois passos porque o
+// valor real que se move é o que foi codificado na transação aqui no build;
+// o que o passo de submit recebe de volta serve só para gravar no banco.
+function assertValidDisputeSplit(order: NonNullable<Awaited<ReturnType<typeof findByIdOrDisplayId>>>, buyerAmount: number, sellerAmount: number) {
   if (!order.escrowContractId || !order.buyerAddress || !order.sellerAddress || !order.escrowAmountUsdc) {
     throw new Error("Este pedido não tem um escrow completo (faltam carteiras, contrato ou valor).");
   }
+  if (Math.abs(buyerAmount + sellerAmount - order.escrowAmountUsdc) > 0.01) {
+    throw new Error("A soma dos valores não bate com o total retido no escrow.");
+  }
+}
+
+export async function buildDisputeResolutionForAdmin(
+  id: string,
+  buyerAmount: number,
+  sellerAmount: number
+): Promise<{ partiallySignedTransaction: string } | null> {
+  const order = await findByIdOrDisplayId(id);
+  if (!order) return null;
+  assertValidDisputeSplit(order, buyerAmount, sellerAmount);
 
   const distributions = [
-    { address: order.buyerAddress, amount: buyerAmount },
-    { address: order.sellerAddress, amount: sellerAmount },
+    { address: order.buyerAddress!, amount: buyerAmount },
+    { address: order.sellerAddress!, amount: sellerAmount },
   ].filter((d) => d.amount > 0);
 
-  await resolveDisputeAsPlatform(order.escrowContractId, distributions);
+  return twBuildResolveDisputeTransaction(order.escrowContractId!, distributions);
+}
+
+export async function submitDisputeResolutionForAdmin(
+  id: string,
+  buyerAmount: number,
+  sellerAmount: number,
+  signedTransaction: string
+): Promise<Order | null> {
+  const order = await findByIdOrDisplayId(id);
+  if (!order) return null;
+  assertValidDisputeSplit(order, buyerAmount, sellerAmount);
+
+  await submitSignedTransaction(signedTransaction);
 
   await prisma.order.update({
     where: { id: order.id },

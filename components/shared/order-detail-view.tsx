@@ -68,7 +68,7 @@ export function OrderDetailView({ id }: { id: string }) {
         <h2 className="text-body-lg font-semibold text-on-surface">Resumo do Pedido</h2>
 
         <div className="flex items-center gap-3 border-b border-outline-variant pb-4">
-          <span className="text-label-sm uppercase text-on-surface-variant">Vendedor</span>
+          <span className="text-label-sm uppercase text-on-surface-variant">Comprador</span>
           <span className="text-body-md text-on-surface">{order.counterpartyName}</span>
         </div>
 

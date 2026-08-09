@@ -9,6 +9,12 @@ export const stellarAddress = z
 
 export const userRole = z.enum(["comprador", "vendedor"]);
 
+// Telefone E.164 (ex: +5511999998888) — usado pelo bot de WhatsApp para
+// vincular pedidos a um número.
+export const e164Phone = z
+  .string()
+  .regex(/^\+[1-9]\d{7,14}$/, "Telefone inválido — use o formato E.164, ex: +5511999998888.");
+
 export const evidenceStage = z.enum(["envio", "recebimento"]);
 export const evidenceType = z.enum(["foto", "video"]);
 

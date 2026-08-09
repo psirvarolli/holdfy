@@ -40,7 +40,8 @@ vi.mock("@/lib/server/trustless-work", () => ({
   buildApproveMilestone: vi.fn(),
   buildReleaseFunds: vi.fn(),
   buildDisputeEscrow: vi.fn(),
-  resolveDisputeAsPlatform: vi.fn(),
+  buildResolveDisputeTransaction: vi.fn(),
+  submitSignedTransaction: vi.fn(),
   completeMilestoneAsPlatform,
   waitForEscrowState,
 }));
@@ -79,6 +80,7 @@ function makeOrder(overrides: Partial<OrderFixture> = {}): OrderFixture {
     createdAt: now,
     updatedAt: now,
     counterpartyName: "Loja Teste",
+    buyerPhone: null,
     description: "Produto Teste",
     hasShipping: true,
     shippingCost: 0,

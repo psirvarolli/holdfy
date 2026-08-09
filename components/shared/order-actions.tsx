@@ -213,31 +213,31 @@ export function OrderActions({ order }: { order: Order }) {
           você confirmar o recebimento.
         </p>
 
+        <Button size="lg" variant="secondary" onClick={() => openRampModal()}>
+          <ArrowDownToLine className="size-4" />
+          Pagar com Pix
+        </Button>
+
         {isChecking ? (
           <Button size="lg" disabled>
             <Loader2 className="size-4 animate-spin" />
             Verificando pagamento...
           </Button>
-        ) : hasEnoughBalance ? (
-          <Button size="lg" onClick={handlePay} disabled={isPaying}>
+        ) : (
+          <Button size="lg" onClick={handlePay} disabled={isPaying || !hasEnoughBalance}>
             {isPaying ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
             {isPaying ? "Confirmando..." : "Confirmar Pagamento"}
           </Button>
-        ) : (
-          <>
-            <Button size="lg" onClick={() => openRampModal()}>
-              <ArrowDownToLine className="size-4" />
-              Pagar via Pix
-            </Button>
-            <button
-              type="button"
-              onClick={() => refreshBalance()}
-              className="text-label-sm text-primary hover:underline"
-            >
-              Já paguei — atualizar
-            </button>
-          </>
         )}
+        {!isChecking && !hasEnoughBalance ? (
+          <button
+            type="button"
+            onClick={() => refreshBalance()}
+            className="text-label-sm text-primary hover:underline"
+          >
+            Já paguei — atualizar
+          </button>
+        ) : null}
         {payError ? <p className="text-label-sm text-error">{payError}</p> : null}
 
         <Button variant="outline" onClick={handleCancel} disabled={isCancelling}>

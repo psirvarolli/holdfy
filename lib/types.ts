@@ -48,6 +48,10 @@ export interface Order {
   createdAt: string;
   counterpartyName: string;
   counterpartyAvatarUrl?: string;
+  // Telefone de quem paga, em E.164 (ex: +5511999998888) — usado pelo bot de
+  // WhatsApp (repositório separado holdfy-whatsapp) para localizar "meus
+  // pedidos" por número. Ver comentário em prisma/schema.prisma.
+  buyerPhone?: string;
   description: string;
   items: OrderItem[];
   // Produtos digitais (ex: serviços, arquivos) não têm frete nem etapa de

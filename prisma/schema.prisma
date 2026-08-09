@@ -36,6 +36,13 @@ model Order {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   counterpartyName  String
+  // Telefone (E.164, ex: +5511999998888) de quem vai pagar este pedido,
+  // usado pelo bot de WhatsApp (repositório separado, holdfy-whatsapp) para
+  // criar pedidos e localizar "meus pedidos" por número — não há ainda
+  // vínculo com um User real (o modelo User não tem telefone), então este
+  // campo é a única forma de saber a quem notificar/mostrar o pedido no
+  // WhatsApp, igual counterpartyName já é só texto livre sem FK para User.
+  buyerPhone        String?
   description       String
   // Produtos digitais não têm frete nem etapa de envio física — o vendedor
   // escolhe isso na criação do pedido (ver NewOrderSheet). Quando false,

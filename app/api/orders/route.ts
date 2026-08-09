@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { listOrders, createOrder } from "@/lib/server/orders";
-import { parseJsonBody, stellarAddress, money } from "@/lib/server/validation";
+import { listOrders, createOrder, findOrdersByBuyerPhone } from "@/lib/server/orders";
+import { parseJsonBody, stellarAddress, money, e164Phone } from "@/lib/server/validation";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const phone = new URL(request.url).searchParams.get("buyerPhone");
+  if (phone) {
+    const parsed = e164Phone.safeParse(phone);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Telefone inválido." }, { status: 400 });
+    }
+    const orders = await findOrdersByBuyerPhone(parsed.data);
+    return NextResponse.json({ orders });
+  }
+
   const orders = await listOrders();
   return NextResponse.json({ orders });
 }
@@ -17,6 +27,7 @@ const newOrderSchema = z.object({
   sourceUrl: z.string().url().max(2000).optional(),
   sourceMarketplace: z.string().trim().max(60).optional(),
   sellerAddress: stellarAddress.optional(),
+  buyerPhone: e164Phone.optional(),
 });
 
 export async function POST(request: Request) {

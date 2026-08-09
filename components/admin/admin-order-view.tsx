@@ -51,7 +51,7 @@ export function AdminOrderView({ id }: { id: string }) {
 
       <Card className="flex flex-col gap-3">
         <div className="flex items-center justify-between text-body-md">
-          <span className="text-on-surface-variant">Vendedor</span>
+          <span className="text-on-surface-variant">Comprador</span>
           <span className="text-on-surface">{order.counterpartyName}</span>
         </div>
         <div className="flex items-center justify-between text-body-md">

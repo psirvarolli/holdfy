@@ -28,7 +28,11 @@ function SheetContent({
       <SheetOverlay />
       <DialogPrimitive.Content
         className={cn(
+          // Mobile: bottom sheet, edge-to-edge. Desktop (sm+): centered
+          // modal with a max width, matching the Pollar ramp modal instead
+          // of stretching the sheet across the full viewport width.
           "fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col gap-4 rounded-t-xl border-t border-outline-variant bg-surface-container-low p-6",
+          "sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border",
           className
         )}
         {...props}
