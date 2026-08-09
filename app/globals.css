@@ -10,20 +10,32 @@
  * on <html> — see lib/theme-context.tsx — reskins the whole app without
  * touching component code. Do not hardcode colors/spacing/radii outside this
  * file — extend tokens here instead.
+ *
+ * 2026-08 identity refresh ("Cofre e Recibo"): the palette below is named
+ * after physical objects from the escrow transaction itself, not fintech
+ * market defaults. Verde-cédula (mint-teal) is the one constant — it's the
+ * literal color of the shipped logo asset, so every other tonal ramp is
+ * built to sit next to it, not to replace it. Lacre (sealing wax) is spent
+ * on exactly one component, the WaxSeal signature element — see
+ * components/landing/wax-seal.tsx — never as a general accent. Carimbo
+ * (notary stamp ink) is deliberately desaturated so an "on-chain proof"
+ * badge doesn't read as crypto-purple. Papel (receipt paper) is scoped to
+ * the ReceiptFrame family, not the global background, so the landing page
+ * doesn't collapse into the cream+serif AI-template look.
  */
 
 :root {
-  --holdfy-surface: #0f1413;
-  --holdfy-surface-dim: #0f1413;
-  --holdfy-surface-bright: #353a39;
-  --holdfy-surface-container-lowest: #0a0f0e;
-  --holdfy-surface-container-low: #171d1b;
-  --holdfy-surface-container: #1b211f;
-  --holdfy-surface-container-high: #262b29;
-  --holdfy-surface-container-highest: #313634;
-  --holdfy-on-surface: #dfe4e1;
+  --holdfy-surface: #161e1b;
+  --holdfy-surface-dim: #101614;
+  --holdfy-surface-bright: #3a413d;
+  --holdfy-surface-container-lowest: #0c110f;
+  --holdfy-surface-container-low: #1a221e;
+  --holdfy-surface-container: #1e2622;
+  --holdfy-surface-container-high: #29312c;
+  --holdfy-surface-container-highest: #343c36;
+  --holdfy-on-surface: #e2e6df;
   --holdfy-on-surface-variant: #bdc9c5;
-  --holdfy-inverse-surface: #dfe4e1;
+  --holdfy-inverse-surface: #e2e6df;
   --holdfy-inverse-on-surface: #2c3130;
   --holdfy-outline: #87938f;
   --holdfy-outline-variant: #3d4946;
@@ -44,16 +56,26 @@
   --holdfy-on-error: #690005;
   --holdfy-error-container: #93000a;
   --holdfy-on-error-container: #ffdad6;
-  --holdfy-background: #0f1413;
-  --holdfy-on-background: #dfe4e1;
+  --holdfy-background: #161e1b;
+  --holdfy-on-background: #e2e6df;
   --holdfy-surface-variant: #313634;
 
   /* Raw brand tokens — literal brand constants, identical in both themes */
   --holdfy-mint-teal: #008675;
+  /* verde-cédula */
   --holdfy-deep-carbon: #0a1212;
   --holdfy-cinza-medio: #e8eded;
   --holdfy-cinza-escuro: #243030;
   --holdfy-pure-white: #ffffff;
+
+  /* "Cofre e Recibo" identity tokens — see block comment above */
+  --holdfy-aco-cofre: #161e1b;
+  --holdfy-lacre: #b23a2e;
+  --holdfy-lacre-dim: #8a2c22;
+  --holdfy-carimbo: #4a4e7c;
+  --holdfy-papel: #ede6d8;
+  --holdfy-papel-dim: #ddd3bf;
+  --holdfy-grafite: #e2e6df;
 
   /* Component-role tokens (dark values, per DESIGN.md Components section) */
   --holdfy-card: var(--holdfy-cinza-escuro);
@@ -114,6 +136,8 @@
 
 @theme inline {
   --font-sans: var(--font-plus-jakarta-sans), sans-serif;
+  --font-display: var(--font-big-shoulders), sans-serif;
+  --font-mono: var(--font-plex-mono), monospace;
 
   --color-surface: var(--holdfy-surface);
   --color-surface-dim: var(--holdfy-surface-dim);
@@ -156,6 +180,14 @@
   --color-cinza-escuro: var(--holdfy-cinza-escuro);
   --color-pure-white: var(--holdfy-pure-white);
 
+  --color-aco-cofre: var(--holdfy-aco-cofre);
+  --color-lacre: var(--holdfy-lacre);
+  --color-lacre-dim: var(--holdfy-lacre-dim);
+  --color-carimbo: var(--holdfy-carimbo);
+  --color-papel: var(--holdfy-papel);
+  --color-papel-dim: var(--holdfy-papel-dim);
+  --color-grafite: var(--holdfy-grafite);
+
   --color-card: var(--holdfy-card);
   --color-card-border: var(--holdfy-card-border);
   --color-input: var(--holdfy-input);
@@ -166,6 +198,23 @@
   --radius-md: var(--holdfy-radius-md);
   --radius-lg: var(--holdfy-radius-lg);
   --radius-xl: var(--holdfy-radius-xl);
+
+  /* Display scale — Big Shoulders Display, hero/section headers only. Used
+     sparingly and always uppercase, echoing lettering stamped into a vault
+     door plate rather than a conventional headline face. */
+  --text-display-hero: 3.25rem;
+  --text-display-hero--line-height: 1.02;
+  --text-display-hero--letter-spacing: -0.01em;
+  --text-display-hero--font-weight: 700;
+
+  --text-display-hero-mobile: 2.25rem;
+  --text-display-hero-mobile--line-height: 1.05;
+  --text-display-hero-mobile--letter-spacing: -0.005em;
+  --text-display-hero-mobile--font-weight: 700;
+
+  --text-display-section: 2rem;
+  --text-display-section--line-height: 1.1;
+  --text-display-section--font-weight: 700;
 
   /* Named typography scale from DESIGN.md, each bundling size/weight/line-height/tracking */
   --text-headline-lg: 2.5rem;
@@ -204,4 +253,91 @@
 body {
   background: var(--color-background);
   color: var(--color-on-background);
+}
+
+/*
+ * Receipt/seal chrome — the landing page's one recurring visual motif
+ * (see components/landing/receipt-frame.tsx, wax-seal.tsx). Scoped under
+ * single, flat class selectors (.holdfy-receipt-*, .holdfy-seal-*) so they
+ * never collide with section-level layout classes or Tailwind utilities
+ * applied alongside them.
+ */
+
+.holdfy-receipt-frame {
+  position: relative;
+  isolation: isolate;
+  border: 1px dashed var(--color-outline-variant);
+  border-radius: var(--radius-md);
+  background-color: var(--holdfy-papel);
+  color: var(--holdfy-deep-carbon);
+}
+
+.holdfy-receipt-frame::before,
+.holdfy-receipt-frame::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  transform: translateY(-50%);
+  background-color: var(--holdfy-receipt-notch-bg, var(--color-surface));
+}
+
+.holdfy-receipt-frame::before {
+  left: -0.6875rem;
+}
+
+.holdfy-receipt-frame::after {
+  right: -0.6875rem;
+}
+
+.holdfy-receipt-divider {
+  border: none;
+  border-top: 1px dashed var(--holdfy-deep-carbon);
+  opacity: 0.25;
+}
+
+.holdfy-seal {
+  --seal-size: 4.5rem;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--seal-size);
+  height: var(--seal-size);
+  border-radius: 9999px;
+  color: var(--holdfy-papel);
+  background: radial-gradient(circle at 35% 30%, var(--holdfy-lacre-dim), var(--holdfy-lacre) 70%);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.holdfy-seal[data-state="retido"] {
+  animation: holdfy-seal-stamp 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.holdfy-seal[data-state="liberado"] {
+  background: radial-gradient(circle at 35% 30%, var(--holdfy-mint-teal), #005e51 70%);
+  animation: holdfy-seal-stamp 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes holdfy-seal-stamp {
+  0% {
+    transform: scale(1.9) rotate(-8deg);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holdfy-seal[data-state="retido"],
+  .holdfy-seal[data-state="liberado"] {
+    animation: none;
+  }
 }

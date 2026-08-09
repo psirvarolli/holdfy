@@ -24,13 +24,9 @@ export interface LandingDictionary {
   heroMockup: {
     orderId: string;
     itemName: string;
-    statusLabel: string;
-    step1Title: string;
-    step1Desc: string;
-    step1Time: string;
-    step2Title: string;
-    step2Desc: string;
-    step2Time: string;
+    value: string;
+    waitingLabel: string;
+    sealedLabel: string;
   };
   stats: { value: string; label: string }[];
   chatSection: { eyebrow: string; title: string; subtitle: string };
@@ -50,6 +46,7 @@ export interface LandingDictionary {
     title: string;
     description: string;
     bullets: string[];
+    auditBadge: string;
     guaranteeTitle: string;
     guaranteeDescription: string;
     disputeNote: string;
@@ -75,23 +72,19 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
       entrar: "Entrar",
     },
     hero: {
-      eyebrow: "Escrow para pagamentos Pix",
-      title: "Compre e venda por Pix sem correr o risco de ser enganado.",
+      eyebrow: "Seu dinheiro fica retido até você confirmar",
+      title: "Compre e venda por Pix sem o medo de ser enganado.",
       subtitle:
-        "A Holdfy retém seu pagamento em custódia até a confirmação da entrega e libera automaticamente para o vendedor. Simples como um Pix, protegido como um contrato.",
-      ctaPrimary: "Começar agora",
+        "O pagamento fica guardado com a Holdfy até você confirmar que recebeu — só depois disso o dinheiro vai pro vendedor. Registrado em blockchain auditável, sem depender da palavra de ninguém.",
+      ctaPrimary: "Proteger meu pagamento",
       ctaSecondary: "Ver como funciona",
     },
     heroMockup: {
       orderId: "Pedido #9482-BR",
-      itemName: "Teclado Mecânico Pro V2",
-      statusLabel: "Pago em Custódia",
-      step1Title: "Pagamento Confirmado",
-      step1Desc: "Seu pagamento está seguro na Holdfy.",
-      step1Time: "14 Out, 09:42",
-      step2Title: "Em Processamento",
-      step2Desc: "O vendedor está preparando seu pedido.",
-      step2Time: "Previsão: 16 Out",
+      itemName: "Honda Civic 2021",
+      value: "R$ 52.400,00",
+      waitingLabel: "aguardando confirmação",
+      sealedLabel: "retido",
     },
     stats: [
       { value: "1.284", label: "Vendas protegidas" },
@@ -125,28 +118,28 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
     steps: [
       {
         title: "Comprador paga via Pix",
-        description: "O valor é capturado na hora e fica retido em custódia — não vai direto pro vendedor.",
+        description: "O valor é capturado na hora e fica retido — não vai direto pro vendedor.",
       },
       {
         title: "Vendedor envia o pedido",
-        description: "Você acompanha cada etapa em tempo real, do preparo até a entrega, pelo painel da Holdfy.",
+        description: "Você acompanha cada etapa, do preparo até a entrega, pelo painel da Holdfy.",
       },
       {
         title: "Comprador confirma e libera",
-        description: "Só depois da confirmação o valor é liberado ao vendedor. Deu problema? É possível abrir disputa.",
+        description: "Só depois da confirmação o valor sai da custódia. Deu problema? Dá pra abrir disputa antes disso.",
       },
     ],
     forWhom: {
-      title: "Para quem compra e para quem vende",
-      subtitle: "O mesmo pagamento, protegido dos dois lados da negociação.",
-      buyerTitle: "Para quem compra",
+      title: "Duas vias do mesmo recibo",
+      subtitle: "Comprador e vendedor protegidos pelo mesmo pagamento, cada um com sua cópia.",
+      buyerTitle: "Via do Comprador",
       buyerBenefits: [
         "Seu dinheiro só sai da custódia quando você confirmar o recebimento",
         "Acompanhe o status do pedido do pagamento à entrega",
         "Abra uma disputa a qualquer momento antes da confirmação",
       ],
       buyerCta: "Comprar com segurança",
-      sellerTitle: "Para quem vende",
+      sellerTitle: "Via do Vendedor",
       sellerBenefits: [
         "Confirmação de pagamento na hora, sem esperar compensação bancária",
         "Menos calote e contestação: o comprador já pagou antes do envio",
@@ -163,6 +156,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         "Regras de liberação e disputa executadas on-chain",
         "Conversão Pix ⇄ stablecoin sem exposição a volatilidade",
       ],
+      auditBadge: "Carimbo — auditável on-chain",
       guaranteeTitle: "Garantia Holdfy",
       guaranteeDescription:
         "Seu dinheiro está guardado com segurança. Ele só é liberado ao vendedor depois que você confirma o recebimento do produto em perfeitas condições — e se algo sair errado, você pode abrir uma disputa a qualquer momento antes disso.",
@@ -222,23 +216,19 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
       entrar: "Entrar",
     },
     hero: {
-      eyebrow: "Custodia para pagos Pix",
-      title: "Compra y vende por Pix sin correr el riesgo de que te engañen.",
+      eyebrow: "Tu dinero queda retenido hasta que confirmes",
+      title: "Compra y vende por Pix sin el miedo a que te engañen.",
       subtitle:
-        "Holdfy retiene tu pago en custodia hasta la confirmación de la entrega y lo libera automáticamente al vendedor. Simple como un Pix, protegido como un contrato.",
-      ctaPrimary: "Empezar ahora",
+        "El pago queda guardado con Holdfy hasta que confirmes que lo recibiste — solo después el dinero va al vendedor. Registrado en una blockchain auditable, sin depender de la palabra de nadie.",
+      ctaPrimary: "Proteger mi pago",
       ctaSecondary: "Ver cómo funciona",
     },
     heroMockup: {
       orderId: "Pedido #9482-BR",
-      itemName: "Teclado Mecánico Pro V2",
-      statusLabel: "Pago en Custodia",
-      step1Title: "Pago confirmado",
-      step1Desc: "Tu pago está seguro en Holdfy.",
-      step1Time: "14 oct, 09:42",
-      step2Title: "En preparación",
-      step2Desc: "El vendedor está preparando tu pedido.",
-      step2Time: "Previsto: 16 oct",
+      itemName: "Honda Civic 2021",
+      value: "R$ 52.400,00",
+      waitingLabel: "esperando confirmación",
+      sealedLabel: "retenido",
     },
     stats: [
       { value: "1.284", label: "Ventas protegidas" },
@@ -272,28 +262,28 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
     steps: [
       {
         title: "El comprador paga por Pix",
-        description: "El valor se captura al instante y queda retenido en custodia — no va directo al vendedor.",
+        description: "El valor se captura al instante y queda retenido — no va directo al vendedor.",
       },
       {
         title: "El vendedor envía el pedido",
-        description: "Sigues cada etapa en tiempo real, desde la preparación hasta la entrega, en el panel de Holdfy.",
+        description: "Sigues cada etapa, desde la preparación hasta la entrega, en el panel de Holdfy.",
       },
       {
         title: "El comprador confirma y libera",
-        description: "Solo después de la confirmación se libera el valor al vendedor. ¿Hubo un problema? Se puede abrir una disputa.",
+        description: "Solo después de la confirmación el valor sale de la custodia. ¿Hubo un problema? Se puede abrir una disputa antes de eso.",
       },
     ],
     forWhom: {
-      title: "Para quien compra y para quien vende",
-      subtitle: "El mismo pago, protegido en ambos lados de la negociación.",
-      buyerTitle: "Para quien compra",
+      title: "Dos copias del mismo recibo",
+      subtitle: "Comprador y vendedor protegidos por el mismo pago, cada uno con su copia.",
+      buyerTitle: "Copia del Comprador",
       buyerBenefits: [
         "Tu dinero solo sale de la custodia cuando confirmas la recepción",
         "Sigue el estado del pedido desde el pago hasta la entrega",
         "Abre una disputa en cualquier momento antes de la confirmación",
       ],
       buyerCta: "Comprar con seguridad",
-      sellerTitle: "Para quien vende",
+      sellerTitle: "Copia del Vendedor",
       sellerBenefits: [
         "Confirmación de pago al instante, sin esperar la compensación bancaria",
         "Menos impagos y contracargos: el comprador ya pagó antes del envío",
@@ -310,6 +300,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         "Reglas de liberación y disputa ejecutadas on-chain",
         "Conversión Pix ⇄ stablecoin sin exposición a la volatilidad",
       ],
+      auditBadge: "Sello — auditable on-chain",
       guaranteeTitle: "Garantía Holdfy",
       guaranteeDescription:
         "Tu dinero está guardado con seguridad. Solo se libera al vendedor después de que confirmes la recepción del producto en perfectas condiciones — y si algo sale mal, puedes abrir una disputa en cualquier momento antes de eso.",
@@ -369,23 +360,19 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
       entrar: "Sign in",
     },
     hero: {
-      eyebrow: "Escrow for Pix payments",
-      title: "Buy and sell over Pix without the risk of getting scammed.",
+      eyebrow: "Your money stays held until you confirm",
+      title: "Buy and sell over Pix without the fear of getting scammed.",
       subtitle:
-        "Holdfy holds your payment in escrow until delivery is confirmed, then releases it to the seller automatically. As simple as a Pix, as safe as a contract.",
-      ctaPrimary: "Get started",
+        "Your payment stays with Holdfy until you confirm you received it — only then does the money move to the seller. Recorded on an auditable blockchain, no one's word required.",
+      ctaPrimary: "Protect my payment",
       ctaSecondary: "See how it works",
     },
     heroMockup: {
       orderId: "Order #9482-BR",
-      itemName: "Pro V2 Mechanical Keyboard",
-      statusLabel: "Paid in Escrow",
-      step1Title: "Payment confirmed",
-      step1Desc: "Your payment is safe with Holdfy.",
-      step1Time: "Oct 14, 9:42 AM",
-      step2Title: "Processing",
-      step2Desc: "The seller is preparing your order.",
-      step2Time: "Expected: Oct 16",
+      itemName: "2021 Honda Civic",
+      value: "$52,400.00",
+      waitingLabel: "awaiting confirmation",
+      sealedLabel: "held",
     },
     stats: [
       { value: "1,284", label: "Protected sales" },
@@ -419,28 +406,28 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
     steps: [
       {
         title: "Buyer pays with Pix",
-        description: "The amount is captured instantly and held in escrow — it doesn't go straight to the seller.",
+        description: "The amount is captured instantly and held — it doesn't go straight to the seller.",
       },
       {
         title: "Seller ships the order",
-        description: "You track every step in real time, from prep to delivery, in the Holdfy dashboard.",
+        description: "You track every step, from prep to delivery, in the Holdfy dashboard.",
       },
       {
         title: "Buyer confirms and releases",
-        description: "The seller only gets paid after confirmation. Something wrong? You can open a dispute.",
+        description: "The value only leaves escrow after confirmation. Something wrong? You can open a dispute before that.",
       },
     ],
     forWhom: {
-      title: "For buyers and for sellers",
-      subtitle: "The same payment, protected on both sides of the deal.",
-      buyerTitle: "For buyers",
+      title: "Two copies of the same receipt",
+      subtitle: "Buyer and seller, protected by the same payment, each with their own copy.",
+      buyerTitle: "Buyer's Copy",
       buyerBenefits: [
         "Your money only leaves escrow once you confirm you received it",
         "Track the order status from payment to delivery",
         "Open a dispute at any point before confirming",
       ],
       buyerCta: "Buy with confidence",
-      sellerTitle: "For sellers",
+      sellerTitle: "Seller's Copy",
       sellerBenefits: [
         "Instant payment confirmation, no waiting on bank settlement",
         "Fewer chargebacks and no-pays: the buyer already paid before shipping",
@@ -457,6 +444,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         "Release and dispute rules enforced on-chain",
         "Pix ⇄ stablecoin conversion with no volatility exposure",
       ],
+      auditBadge: "Stamped — auditable on-chain",
       guaranteeTitle: "Holdfy Guarantee",
       guaranteeDescription:
         "Your money is kept safe. It's only released to the seller once you confirm the product arrived in perfect condition — and if something goes wrong, you can open a dispute at any point before that.",
