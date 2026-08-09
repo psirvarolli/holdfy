@@ -1,11 +1,20 @@
 import "server-only";
-import { Keypair, TransactionBuilder, Networks } from "@stellar/stellar-sdk";
+import { Keypair, TransactionBuilder } from "@stellar/stellar-sdk";
+import { networkPassphrase, assertTrustlessWorkUrlMatchesNetwork } from "@/lib/server/stellar-network";
 
 const BASE_URL = process.env.TRUSTLESS_WORK_BASE_URL!;
 const API_KEY = process.env.TRUSTLESS_WORK_API_KEY!;
 const USDC_ISSUER = process.env.USDC_ISSUER!;
 const PLATFORM_PUBLIC_KEY = process.env.HOLDFY_PLATFORM_PUBLIC_KEY!;
 const PLATFORM_SECRET_KEY = process.env.HOLDFY_PLATFORM_SECRET_KEY!;
+// Conta separada, com assinatura 2-de-2 (chave do servidor + chave pessoal
+// da Patricia via Freighter) — só ela tem o papel de disputeResolver no
+// escrow. Nenhuma chave sozinha resolve uma disputa e move o dinheiro; ver
+// buildResolveDisputeTransaction/submitCoSignedTransaction abaixo.
+const DISPUTE_RESOLVER_PUBLIC_KEY = process.env.HOLDFY_DISPUTE_RESOLVER_PUBLIC_KEY!;
+const DISPUTE_RESOLVER_SECRET_KEY = process.env.HOLDFY_DISPUTE_RESOLVER_SECRET_KEY!;
+
+assertTrustlessWorkUrlMatchesNetwork(BASE_URL);
 
 export class TrustlessWorkError extends Error {}
 
@@ -115,9 +124,26 @@ export interface DeployEscrowParams {
 // pra rede Stellar, sem passar pelo endpoint da Trustless Work).
 async function signAndSendWithPlatformWallet(unsignedTransaction: string): Promise<SendTransactionResponse> {
   const keypair = Keypair.fromSecret(PLATFORM_SECRET_KEY);
-  const tx = TransactionBuilder.fromXDR(unsignedTransaction, Networks.TESTNET);
+  const tx = TransactionBuilder.fromXDR(unsignedTransaction, networkPassphrase);
   tx.sign(keypair);
   return twPost<SendTransactionResponse>("/helper/send-transaction", { signedXdr: tx.toXDR() });
+}
+
+// Só a assinatura do servidor, sem enviar — usado quando a conta que assina
+// exige uma segunda assinatura (hoje, só a disputeResolver: ver
+// buildResolveDisputeTransaction). O XDR volta com 1 de 2 assinaturas; quem
+// chamou ainda precisa coletar a segunda antes de submeter.
+function partialSignWithDisputeResolverWallet(unsignedTransaction: string): string {
+  const keypair = Keypair.fromSecret(DISPUTE_RESOLVER_SECRET_KEY);
+  const tx = TransactionBuilder.fromXDR(unsignedTransaction, networkPassphrase);
+  tx.sign(keypair);
+  return tx.toXDR();
+}
+
+// Envia um XDR que já chegou assinado por fora (ex.: já com as 2 assinaturas
+// da disputeResolver coletadas) — não assina nada aqui.
+export async function submitSignedTransaction(signedXdr: string): Promise<SendTransactionResponse> {
+  return twPost<SendTransactionResponse>("/helper/send-transaction", { signedXdr });
 }
 
 // Deploya o escrow (assinado pela própria Holdfy, que paga a taxa de rede da
@@ -133,7 +159,7 @@ export async function deploySingleReleaseEscrow(params: DeployEscrowParams): Pro
       serviceProvider: params.digitalDelivery ? PLATFORM_PUBLIC_KEY : params.sellerAddress,
       receiver: params.sellerAddress,
       releaseSigner: params.buyerAddress,
-      disputeResolver: PLATFORM_PUBLIC_KEY,
+      disputeResolver: DISPUTE_RESOLVER_PUBLIC_KEY,
       platformAddress: PLATFORM_PUBLIC_KEY,
     },
     amount: params.amount,
@@ -210,17 +236,20 @@ export async function buildDisputeEscrow(contractId: string, signerAddress: stri
   });
 }
 
-// Resolução de disputa é decidida e assinada pela própria Holdfy (papel
-// disputeResolver) — não precisa de nenhuma assinatura do comprador/vendedor,
-// por isso já sai assinada e enviada, sem passo intermediário no cliente.
-export async function resolveDisputeAsPlatform(
+// Resolução de disputa exige 2 assinaturas na conta disputeResolver: a do
+// servidor (aqui) e a pessoal da Patricia, coletada depois no painel admin
+// via Freighter — nenhuma das duas sozinha move o dinheiro. Por isso este
+// passo só constrói e faz a assinatura parcial do servidor; quem chamou (a
+// rota /resolve-dispute/build) devolve esse XDR pro cliente admin colher a
+// segunda assinatura, e só depois vai para submitSignedTransaction.
+export async function buildResolveDisputeTransaction(
   contractId: string,
   distributions: { address: string; amount: number }[]
-): Promise<SendTransactionResponse> {
+): Promise<{ partiallySignedTransaction: string }> {
   const { unsignedTransaction } = await twPost<UnsignedTxResponse>("/escrow/single-release/resolve-dispute", {
     contractId,
-    disputeResolver: PLATFORM_PUBLIC_KEY,
+    disputeResolver: DISPUTE_RESOLVER_PUBLIC_KEY,
     distributions,
   });
-  return signAndSendWithPlatformWallet(unsignedTransaction);
+  return { partiallySignedTransaction: partialSignWithDisputeResolverWallet(unsignedTransaction) };
 }

@@ -27,7 +27,11 @@ interface OrdersContextValue {
   openDispute: (id: string, reason: string, openedBy: UserRole) => Promise<void>;
   markShipped: (id: string, trackingCode: string) => Promise<void>;
   respondToDispute: (id: string, response: string, respondedBy: UserRole) => Promise<void>;
-  resolveDispute: (id: string, buyerAmount: number, sellerAmount: number) => Promise<void>;
+  // Exposto para o painel admin de disputas, que assina fora do fluxo Pollar
+  // (via Freighter, ver components/shared/dispute-resolution-panel.tsx) e
+  // por isso não passa pelas ações acima — só precisa gravar o resultado
+  // final no estado compartilhado.
+  upsertOrder: (order: Order) => void;
   cancelOrder: (id: string, cancelledBy: UserRole) => Promise<void>;
   addEvidence: (
     id: string,
@@ -128,14 +132,6 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     upsertOrder(order);
   }
 
-  async function resolveDispute(id: string, buyerAmount: number, sellerAmount: number) {
-    const { order } = await postJson<{ order: Order }>(`/api/admin/orders/${id}/resolve-dispute`, {
-      buyerAmount,
-      sellerAmount,
-    });
-    upsertOrder(order);
-  }
-
   async function cancelOrder(id: string, cancelledBy: UserRole) {
     const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/cancel`, { cancelledBy });
     upsertOrder(order);
@@ -163,7 +159,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     openDispute,
     markShipped,
     respondToDispute,
-    resolveDispute,
+    upsertOrder,
     cancelOrder,
     addEvidence,
   };
