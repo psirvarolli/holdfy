@@ -93,6 +93,16 @@ model Order {
   evidence      OrderEvidence[]
 }
 
+// Captura de lead da landing page pública (LeadModal, "acesso antecipado") —
+// não tem relação com Order/User, é só a lista de early adopters interessados.
+model Lead {
+  id        String   @id @default(cuid())
+  name      String   @default("")
+  email     String   @unique
+  source    String   @default("landing")
+  createdAt DateTime @default(now())
+}
+
 model OrderItem {
   id       String @id @default(cuid())
   orderId  String
