@@ -965,6 +965,8 @@ footer[id] {
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .plan-price .suffix {
   color: var(--on-surface-variant);
