@@ -956,8 +956,9 @@ footer[id] {
 }
 .plan-price {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px;
+  gap: 4px 6px;
   margin-bottom: 24px;
 }
 .plan-price .value {
@@ -1586,6 +1587,9 @@ footer[id] {
   }
   .hero-ctas .btn {
     width: 100%;
+  }
+  .plan-price .value {
+    font-size: 32px;
   }
   .phone-frame {
     width: 320px;
