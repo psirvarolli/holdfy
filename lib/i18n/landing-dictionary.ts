@@ -309,7 +309,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         },
         {
           title: "Empresas B2B",
-          text: "Feche contratos com fornecedores novos sem medo: pagamento condicionado a entregas e SLAs, com mediação de disputas.",
+          text: "Feche contratos com fornecedores novos sem medo: pagamento condicionado a entregas e SLAs.",
         },
       ],
     },
@@ -591,7 +591,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         },
         {
           title: "Empresas B2B",
-          text: "Cierra contratos con proveedores nuevos sin miedo: pago condicionado a entregas y SLAs, con mediación de disputas.",
+          text: "Cierra contratos con proveedores nuevos sin miedo: pago condicionado a entregas y SLAs.",
         },
       ],
     },
@@ -873,7 +873,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         },
         {
           title: "B2B companies",
-          text: "Sign contracts with new vendors without fear: payment conditioned on deliveries and SLAs, with dispute mediation included.",
+          text: "Sign contracts with new vendors without fear: payment conditioned on deliveries and SLAs.",
         },
       ],
     },
