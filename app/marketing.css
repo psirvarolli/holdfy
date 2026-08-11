@@ -1187,7 +1187,7 @@ footer[id] {
 }
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr auto auto 1fr;
+  grid-template-columns: 1.4fr auto 1fr;
   gap: 48px;
   margin-bottom: 56px;
 }

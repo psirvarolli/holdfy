@@ -12,7 +12,7 @@ import { usePlans, useSellerPlanStatus, subscribeToPro } from "@/lib/plans-clien
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Plan } from "@/lib/types";
 
-const ENTERPRISE_CONTACT_EMAIL = "contato@holdfy.com.br";
+const ENTERPRISE_CONTACT_EMAIL = "contato@holdfyai.com.br";
 
 function PlanCard({
   plan,

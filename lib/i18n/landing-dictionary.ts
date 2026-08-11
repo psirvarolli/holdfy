@@ -431,14 +431,6 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
             { label: "FAQ", href: "#faq" },
           ],
         },
-        {
-          title: "Legal",
-          links: [
-            { label: "Termos de uso", href: "#" },
-            { label: "Privacidade", href: "#" },
-            { label: "Compliance", href: "#" },
-          ],
-        },
       ],
       contact: { title: "Contato", emailLabel: "E-mail", phoneLabel: "Telefone", addressLabel: "Endereço" },
       compliance:
@@ -721,14 +713,6 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
             { label: "Preguntas", href: "#faq" },
           ],
         },
-        {
-          title: "Legal",
-          links: [
-            { label: "Términos de uso", href: "#" },
-            { label: "Privacidad", href: "#" },
-            { label: "Compliance", href: "#" },
-          ],
-        },
       ],
       contact: { title: "Contacto", emailLabel: "Correo", phoneLabel: "Teléfono", addressLabel: "Dirección" },
       compliance:
@@ -1008,14 +992,6 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
             { label: "Who it's for", href: "#para-quem" },
             { label: "Pricing", href: "#precos" },
             { label: "FAQ", href: "#faq" },
-          ],
-        },
-        {
-          title: "Legal",
-          links: [
-            { label: "Terms of use", href: "#" },
-            { label: "Privacy", href: "#" },
-            { label: "Compliance", href: "#" },
           ],
         },
       ],
