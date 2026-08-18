@@ -48,8 +48,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ link });
   } catch (error) {
     console.error("Falha ao vincular WhatsApp", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: `Erro interno: ${message}` }, { status: 500 });
+    return NextResponse.json({ error: "Falha ao vincular o WhatsApp. Tente novamente." }, { status: 500 });
   }
 }
 
