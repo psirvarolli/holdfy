@@ -43,8 +43,14 @@ export async function POST(request: Request) {
   const parsed = await parseJsonBody(request, linkSchema);
   if ("error" in parsed) return parsed.error;
 
-  const link = await linkSellerWhatsapp(parsed.data.sellerAddress, parsed.data.phone);
-  return NextResponse.json({ link });
+  try {
+    const link = await linkSellerWhatsapp(parsed.data.sellerAddress, parsed.data.phone);
+    return NextResponse.json({ link });
+  } catch (error) {
+    console.error("Falha ao vincular WhatsApp", error);
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: `Erro interno: ${message}` }, { status: 500 });
+  }
 }
 
 const unlinkSchema = z.object({ sellerAddress: stellarAddress });
