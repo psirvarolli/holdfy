@@ -38,7 +38,7 @@ const PRO = {
   id: "plan-pro",
   slug: "pro",
   name: "Pro",
-  monthlyPriceReais: 249,
+  monthlyPriceReais: 197,
   feePercent: 2.5,
   includedEscrows: 10,
   maxTxValueReais: 20000,

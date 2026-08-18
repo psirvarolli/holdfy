@@ -335,7 +335,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         {
           name: "Pro",
           audience: "Para agências e prestadores frequentes",
-          price: "R$ 249",
+          price: "R$ 197",
           suffix: "por mês + 2,5% por transação",
           features: [
             "10 escrows por mês incluídos",
@@ -617,7 +617,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         {
           name: "Pro",
           audience: "Para agencias y prestadores frecuentes",
-          price: "R$ 249",
+          price: "R$ 197",
           suffix: "por mes + 2,5% por transacción",
           features: [
             "10 escrows por mes incluidos",
@@ -899,7 +899,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         {
           name: "Pro",
           audience: "For agencies and frequent providers",
-          price: "R$249",
+          price: "R$197",
           suffix: "per month + 2.5% per transaction",
           features: [
             "10 escrows per month included",

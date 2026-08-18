@@ -4,7 +4,7 @@ import { orders as mockOrders } from "../lib/mocks/orders";
 const prisma = new PrismaClient();
 
 // Planos de cobrança — cadastrados aqui, não editáveis pelo app (ver
-// lib/server/plans.ts). O preço do Pro é só um número (R$249) usado pra
+// lib/server/plans.ts). O preço do Pro é só um número (R$197) usado pra
 // montar o link de pagamento da InfinitePay na hora — diferente da Stripe,
 // não existe um "Price" cadastrado antecipadamente do lado de fora.
 const PLAN_SEEDS = [
@@ -20,7 +20,7 @@ const PLAN_SEEDS = [
   {
     slug: "pro",
     name: "Pro",
-    monthlyPriceReais: 249,
+    monthlyPriceReais: 197,
     feePercent: 2.5,
     includedEscrows: 10,
     maxTxValueReais: 20000,
