@@ -2,19 +2,144 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { User, Wallet, Landmark, Palette, Copy, Check, MapPin, Percent, ShieldCheck, ArrowDownToLine, ArrowUpFromLine, RefreshCw } from "lucide-react";
+import { User, Wallet, Landmark, Palette, Copy, Check, MapPin, Percent, ShieldCheck, ArrowDownToLine, ArrowUpFromLine, RefreshCw, MessageCircle, Pencil, X } from "lucide-react";
 import { usePollar } from "@pollar/react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { RoleSwitch } from "@/components/shared/role-switch";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { useRole } from "@/lib/role-context";
 import { useTheme } from "@/lib/theme-context";
 import { useUsdcBalance } from "@/lib/pollar-balance";
 import { useSellerPlanStatus } from "@/lib/plans-client";
+import { useSellerWhatsapp, linkSellerWhatsapp, unlinkSellerWhatsapp } from "@/lib/seller-whatsapp-client";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+// Mesma regra do bot (holdfy-whatsapp/apps/bot/src/phone.ts): sem código de
+// país digitado, assume Brasil (10-11 dígitos = DDD + número); com código de
+// país, usa como veio.
+function normalizePhone(raw: string): string | null {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.length === 10 || digits.length === 11) return `+55${digits}`;
+  if (digits.length >= 12 && digits.length <= 15) return `+${digits}`;
+  return null;
+}
+
+function WhatsappCard() {
+  const { wallet } = usePollar();
+  const { link, isLoading, refresh } = useSellerWhatsapp();
+  const [editing, setEditing] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!wallet) return;
+    const normalized = normalizePhone(phoneInput);
+    if (!normalized) {
+      setError("Número inválido. Digite com DDD, ex: 11999998888.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await linkSellerWhatsapp(wallet.address, normalized);
+      setEditing(false);
+      setPhoneInput("");
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao vincular o WhatsApp.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleUnlink() {
+    if (!wallet) return;
+    setSaving(true);
+    try {
+      await unlinkSellerWhatsapp(wallet.address);
+      refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="flex flex-col gap-4">
+      <div className="flex items-center gap-2 text-on-surface">
+        <MessageCircle className="size-5" />
+        <h2 className="text-body-lg font-semibold">WhatsApp</h2>
+      </div>
+      <p className="text-body-md text-on-surface-variant">
+        Vincule seu número para criar pedidos protegidos direto pelo WhatsApp, pelo Holdfy Bot —
+        os pedidos criados por lá usam a carteira desta conta.
+      </p>
+
+      {!editing && link ? (
+        <div className="flex items-center justify-between rounded-md border border-input-border bg-input px-4 py-3">
+          <span className="text-body-md text-on-surface">{link.phone}</span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setPhoneInput(link.phone.replace(/^\+55/, ""));
+                setEditing(true);
+              }}
+            >
+              <Pencil className="size-4" />
+              Trocar
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleUnlink} disabled={saving}>
+              <X className="size-4" />
+              Remover
+            </Button>
+          </div>
+        </div>
+      ) : !editing ? (
+        <div className="flex items-center justify-between gap-3 rounded-md bg-surface-container-high px-4 py-3">
+          <span className="text-body-md text-on-surface-variant">
+            {isLoading ? "Carregando..." : "Nenhum número vinculado ainda."}
+          </span>
+          <Button size="sm" onClick={() => setEditing(true)} disabled={isLoading}>
+            Vincular número
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Input
+              placeholder="11999998888"
+              value={phoneInput}
+              onChange={(e) => setPhoneInput(e.target.value)}
+              disabled={saving}
+            />
+            <Button size="sm" onClick={handleSave} disabled={saving}>
+              Salvar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setEditing(false);
+                setError(null);
+              }}
+              disabled={saving}
+            >
+              Cancelar
+            </Button>
+          </div>
+          {error ? <p className="text-label-sm text-error">{error}</p> : null}
+        </div>
+      )}
+    </Card>
+  );
+}
 
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
@@ -222,6 +347,8 @@ export default function SettingsPage() {
               </p>
             ) : null}
           </Card>
+
+          <WhatsappCard />
         </>
       )}
     </div>

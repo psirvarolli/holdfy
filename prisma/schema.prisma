@@ -209,3 +209,18 @@ model SellerSubscription {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
+
+// Vincula o número de WhatsApp de um vendedor à carteira Stellar dele
+// (mesmo identificador usado por SellerSubscription, já que não há conta de
+// usuário real ainda). Cadastrado pelo próprio vendedor em /settings, com a
+// carteira Pollar já logada — é o que permite ao bot de WhatsApp
+// (holdfy-whatsapp) saber qual sellerAddress gravar num pedido criado pelo
+// vendedor por lá; sem isso, o pedido fica sem carteira e o comprador nunca
+// consegue pagar (ver buildPaymentTransaction em lib/server/orders.ts).
+model SellerWhatsapp {
+  id            String   @id @default(cuid())
+  sellerAddress String   @unique
+  phone         String   @unique // E.164, ex: +5511999998888
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
