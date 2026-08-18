@@ -51,9 +51,9 @@ export async function linkSellerWhatsapp(sellerAddress: string, phone: string): 
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sellerAddress, phone }),
   });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data?.error ?? "Falha ao vincular o WhatsApp.");
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data) {
+    throw new Error(data?.error ?? "Falha ao vincular o WhatsApp. Tente novamente.");
   }
   return data.link;
 }
