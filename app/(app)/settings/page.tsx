@@ -38,7 +38,10 @@ function WhatsappCard() {
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
-    if (!wallet) return;
+    if (!wallet) {
+      setError("Sua carteira ainda não está pronta. Aguarde um instante e tente de novo.");
+      return;
+    }
     const normalized = normalizePhone(phoneInput);
     if (!normalized) {
       setError("Número inválido. Digite com DDD, ex: 11999998888.");
