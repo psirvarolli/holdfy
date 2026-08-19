@@ -19,6 +19,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === "comprador" || stored === "vendedor") {
+      // window/localStorage não existem no SSR, então isso não pode virar
+      // um inicializador preguiçoso do useState.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRoleState(stored);
     }
   }, []);

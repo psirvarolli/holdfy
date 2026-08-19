@@ -32,6 +32,9 @@ function LandingPageContent() {
 
   useEffect(() => {
     const stored = window.localStorage.getItem(LANDING_THEME_KEY);
+    // window/localStorage não existem no SSR, então isso não pode virar um
+    // inicializador preguiçoso do useState.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stored === "light" || stored === "dark") setTheme(stored);
   }, []);
 

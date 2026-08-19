@@ -224,3 +224,15 @@ model SellerWhatsapp {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+// Contador de limite de tentativas (rate limit) persistido no Postgres em
+// vez de memória do processo — necessário porque a Vercel roda funções
+// serverless, então um Map em memória (a implementação anterior) não é
+// compartilhado entre instâncias e na prática não limita nada em produção
+// (ver auditoria de mainnet). `key` é algo como "admin-login:1.2.3.4"; ver
+// lib/server/rate-limit.ts para o UPSERT atômico que lê/escreve aqui.
+model RateLimitBucket {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+}

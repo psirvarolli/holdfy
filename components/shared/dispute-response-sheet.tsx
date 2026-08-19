@@ -28,7 +28,15 @@ export function DisputeResponseSheet({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!response.trim()) return;
-    // TODO: enviar evidências para a Trustless Work mediar a disputa no contrato de escrow.
+    // A resposta (e as evidências enviadas separadamente, via EvidenceGallery)
+    // fica só no banco da Holdfy — a API da Trustless Work não tem nenhum
+    // campo de evidência no endpoint de resolução de disputa, só
+    // contractId + a divisão de valor (ver buildResolveDisputeTransaction em
+    // lib/server/trustless-work.ts). A decisão é administrativa por design:
+    // components/admin/admin-order-view.tsx mostra essa resposta e as
+    // evidências para quem vai resolver, antes do painel de resolução; o
+    // que de fato vai on-chain é só o valor de cada lado, assinado 2-de-2
+    // (servidor + a pessoa que resolveu, via Freighter).
     await respondToDispute(orderId, response.trim(), respondingAs);
     setOpen(false);
   }

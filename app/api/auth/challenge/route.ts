@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { Keypair, WebAuth } from "@stellar/stellar-sdk";
 import { networkPassphrase } from "@/lib/server/stellar-network";
 import { stellarAddress, parseJsonBody } from "@/lib/server/validation";
+import { isRateLimited } from "@/lib/server/rate-limit";
 import { z } from "zod";
 
 const PLATFORM_SECRET_KEY = process.env.HOLDFY_PLATFORM_SECRET_KEY!;
+const MAX_ATTEMPTS = 20;
+const WINDOW_MS = 5 * 60 * 1000; // 5 minutos
 
 const schema = z.object({ address: stellarAddress });
 
@@ -16,6 +19,11 @@ const schema = z.object({ address: stellarAddress });
 // usar o host da própria requisição é suficiente e sempre correto, em dev ou
 // produção.
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (await isRateLimited(`auth-challenge:${ip}`, MAX_ATTEMPTS, WINDOW_MS)) {
+    return NextResponse.json({ error: "Muitas tentativas seguidas. Aguarde alguns minutos." }, { status: 429 });
+  }
+
   const parsed = await parseJsonBody(request, schema);
   if ("error" in parsed) return parsed.error;
 

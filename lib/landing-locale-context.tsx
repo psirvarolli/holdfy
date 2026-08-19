@@ -22,6 +22,9 @@ export function LandingLocaleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === "pt" || stored === "es" || stored === "en") {
+      // window/localStorage não existem no SSR, então isso não pode virar
+      // um inicializador preguiçoso do useState.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocaleState(stored);
     }
   }, []);

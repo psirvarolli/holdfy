@@ -22,6 +22,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === "dark" || stored === "light") {
+      // window/localStorage não existem no SSR, então isso não pode virar
+      // um inicializador preguiçoso do useState — precisa mesmo rodar só
+      // depois de montar no cliente.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTheme(stored);
       applyTheme(stored);
     }

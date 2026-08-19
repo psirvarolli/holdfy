@@ -15,7 +15,7 @@ const schema = z.object({ password: z.string().min(1).max(200) });
 
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (isRateLimited(`admin-login:${ip}`, MAX_ATTEMPTS, WINDOW_MS)) {
+  if (await isRateLimited(`admin-login:${ip}`, MAX_ATTEMPTS, WINDOW_MS)) {
     return NextResponse.json(
       { error: "Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo." },
       { status: 429 }

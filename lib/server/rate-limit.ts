@@ -1,24 +1,21 @@
 import "server-only";
+import { prisma } from "@/lib/prisma";
 
-interface Bucket {
-  count: number;
-  resetAt: number;
-}
-
-// Limitador simples em memória — funciona bem para uma única instância do
-// servidor, que é o que existe hoje. Numa implantação com múltiplas
-// instâncias (ex: várias funções serverless), cada uma teria seu próprio
-// contador; nesse cenário isto precisaria virar um armazenamento
-// compartilhado (Redis, Upstash, etc.) em vez de um Map na memória.
-const buckets = new Map<string, Bucket>();
-
-export function isRateLimited(key: string, limit: number, windowMs: number): boolean {
-  const now = Date.now();
-  const bucket = buckets.get(key);
-  if (!bucket || now > bucket.resetAt) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return false;
-  }
-  bucket.count += 1;
-  return bucket.count > limit;
+// Persistido no Postgres (não num Map em memória) porque a Vercel roda
+// funções serverless — cada instância teria seu próprio contador, então a
+// versão anterior não limitava nada de verdade em produção (ver auditoria de
+// mainnet). O UPSERT abaixo é uma única instrução atômica: se a janela
+// (`resetAt`) já passou, reseta pra 1; senão incrementa — sem race condition
+// entre chamadas concorrentes de instâncias diferentes.
+export async function isRateLimited(key: string, limit: number, windowMs: number): Promise<boolean> {
+  const resetAt = new Date(Date.now() + windowMs);
+  const rows = await prisma.$queryRaw<{ count: number }[]>`
+    INSERT INTO "RateLimitBucket" ("key", "count", "resetAt")
+    VALUES (${key}, 1, ${resetAt})
+    ON CONFLICT ("key") DO UPDATE SET
+      "count" = CASE WHEN "RateLimitBucket"."resetAt" < now() THEN 1 ELSE "RateLimitBucket"."count" + 1 END,
+      "resetAt" = CASE WHEN "RateLimitBucket"."resetAt" < now() THEN ${resetAt} ELSE "RateLimitBucket"."resetAt" END
+    RETURNING "count"
+  `;
+  return rows[0].count > limit;
 }

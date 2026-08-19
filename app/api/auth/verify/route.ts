@@ -3,6 +3,7 @@ import { WebAuth } from "@stellar/stellar-sdk";
 import { z } from "zod";
 import { networkPassphrase } from "@/lib/server/stellar-network";
 import { parseJsonBody } from "@/lib/server/validation";
+import { isRateLimited } from "@/lib/server/rate-limit";
 import {
   createWalletSessionToken,
   WALLET_SESSION_COOKIE,
@@ -10,6 +11,8 @@ import {
 } from "@/lib/server/wallet-session";
 
 const PLATFORM_PUBLIC_KEY = process.env.HOLDFY_PLATFORM_PUBLIC_KEY!;
+const MAX_ATTEMPTS = 20;
+const WINDOW_MS = 5 * 60 * 1000; // 5 minutos
 
 const schema = z.object({ signedXdr: z.string().min(1) });
 
@@ -19,6 +22,11 @@ const schema = z.object({ signedXdr: z.string().min(1) });
 // poderia forjar). Se bater, essa é a prova criptográfica de posse da
 // carteira; grava a sessão com esse endereço.
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (await isRateLimited(`auth-verify:${ip}`, MAX_ATTEMPTS, WINDOW_MS)) {
+    return NextResponse.json({ error: "Muitas tentativas seguidas. Aguarde alguns minutos." }, { status: 429 });
+  }
+
   const parsed = await parseJsonBody(request, schema);
   if ("error" in parsed) return parsed.error;
 

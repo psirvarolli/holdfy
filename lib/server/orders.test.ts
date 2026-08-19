@@ -389,3 +389,156 @@ describe("createOrder — respeita o limite de valor por pedido do plano do vend
     expect(orderCreate).toHaveBeenCalled();
   });
 });
+
+// Cada teste acima cobre uma função isolada com o "antes"/"depois" já dados
+// prontos — este encadeia as mesmas funções na ordem real em que o app as
+// chama, pegando bugs de integração entre etapas que os testes isolados não
+// cobririam (ex: um campo que uma etapa esquece de repassar pra próxima).
+describe("ciclo de vida completo de um pedido", () => {
+  const sellerAddress = "GSELLER1234567890123456789012345678901234567890123456";
+  const buyerAddress = "GBUYER01234567890123456789012345678901234567890123456";
+
+  it("produto físico: cria → paga → confirma pagamento → envia → confirma recebimento", async () => {
+    // 1. Vendedor cria o pedido.
+    getMaxTxValueForSeller.mockResolvedValueOnce(null);
+    orderCount.mockResolvedValueOnce(0);
+    orderCreate.mockResolvedValueOnce(
+      makeOrder({ status: "aguardando_pagamento", escrowContractId: null, escrowAmountUsdc: null, sellerAddress })
+    );
+    const created = await createOrder({
+      counterpartyName: "Comprador Ciclo",
+      itemName: "Produto Ciclo",
+      price: 100,
+      hasShipping: true,
+      shippingCost: 0,
+      sellerAddress,
+      buyerPhone: "+5511999998888",
+    });
+    expect(created.status).toBe("aguardando_pagamento");
+
+    // 2. Comprador monta a transação de pagamento (deploy + financiamento do escrow).
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ status: "aguardando_pagamento", escrowContractId: null, escrowAmountUsdc: null, sellerAddress })
+    );
+    convertBrlToUsdc.mockResolvedValueOnce(19.55);
+    deploySingleReleaseEscrow.mockResolvedValueOnce({ contractId: "CCICLO" });
+    buildFundEscrow.mockResolvedValueOnce({ status: "SUCCESS", unsignedTransaction: "xdr" });
+    await buildPaymentTransaction(created.id, buyerAddress);
+    expect(deploySingleReleaseEscrow).toHaveBeenCalledWith(expect.objectContaining({ amount: 19.55 }));
+
+    // 3. O saldo aparece on-chain — confirma o pagamento.
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ status: "aguardando_pagamento", escrowContractId: "CCICLO", escrowAmountUsdc: 19.55, sellerAddress })
+    );
+    waitForEscrowState.mockResolvedValueOnce({
+      balance: 19.55,
+      flags: { disputed: false, released: false, resolved: false },
+      milestones: [],
+    });
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ status: "pago_custodia", escrowContractId: "CCICLO", escrowAmountUsdc: 19.55, sellerAddress })
+    );
+    await confirmPayment(created.id);
+    expect(orderUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "pago_custodia" }) })
+    );
+
+    // 4. Vendedor marca como enviado.
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ status: "pago_custodia", escrowContractId: "CCICLO", escrowAmountUsdc: 19.55, sellerAddress })
+    );
+    waitForEscrowState.mockResolvedValueOnce({
+      balance: 19.55,
+      flags: { disputed: false, released: false, resolved: false },
+      milestones: [{ status: "Completed", approved: false }],
+    });
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ status: "em_transito", escrowContractId: "CCICLO", escrowAmountUsdc: 19.55, sellerAddress })
+    );
+    await markShipped(created.id, "BR999");
+    expect(orderUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "em_transito" }) })
+    );
+
+    // 5. Comprador confirma o recebimento — libera o valor.
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ status: "em_transito", escrowContractId: "CCICLO", escrowAmountUsdc: 19.55, sellerAddress })
+    );
+    waitForEscrowState.mockResolvedValueOnce({
+      balance: 0,
+      flags: { disputed: false, released: true, resolved: false },
+      milestones: [{ status: "Completed", approved: true }],
+    });
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ status: "liberado", escrowContractId: "CCICLO", escrowAmountUsdc: 19.55, sellerAddress })
+    );
+    await confirmReceipt(created.id);
+    expect(orderUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: { status: "liberado" } }));
+
+    expect(createNotification).toHaveBeenCalledWith(created.id, "vendedor", expect.stringContaining("pagou"));
+    expect(createNotification).toHaveBeenCalledWith(created.id, "comprador", expect.stringContaining("enviou"));
+    expect(createNotification).toHaveBeenCalledWith(created.id, "vendedor", expect.stringContaining("liberado"));
+  });
+
+  it("produto digital: pula a etapa de envio — libera assim que o pagamento é confirmado", async () => {
+    const digitalTimeline = [
+      { id: "t1", orderId: "order-1", stepId: "pagamento_confirmado", title: "", description: "", timestamp: null, state: "atual", sortOrder: 0 },
+      { id: "t2", orderId: "order-1", stepId: "confirmado_vendedor", title: "", description: "", timestamp: null, state: "pendente", sortOrder: 1 },
+      { id: "t3", orderId: "order-1", stepId: "entregue", title: "", description: "", timestamp: null, state: "pendente", sortOrder: 2 },
+    ] as const;
+
+    getMaxTxValueForSeller.mockResolvedValueOnce(null);
+    orderCount.mockResolvedValueOnce(0);
+    orderCreate.mockResolvedValueOnce(
+      makeOrder({ hasShipping: false, status: "aguardando_pagamento", escrowContractId: null, escrowAmountUsdc: null, sellerAddress, timeline: [...digitalTimeline] })
+    );
+    const created = await createOrder({
+      counterpartyName: "Comprador Ciclo Digital",
+      itemName: "Curso Ciclo",
+      price: 50,
+      hasShipping: false,
+      shippingCost: 0,
+      sellerAddress,
+    });
+
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ hasShipping: false, status: "aguardando_pagamento", escrowContractId: null, escrowAmountUsdc: null, sellerAddress, timeline: [...digitalTimeline] })
+    );
+    convertBrlToUsdc.mockResolvedValueOnce(9.77);
+    deploySingleReleaseEscrow.mockResolvedValueOnce({ contractId: "CDIGITAL" });
+    buildFundEscrow.mockResolvedValueOnce({ status: "SUCCESS", unsignedTransaction: "xdr" });
+    await buildPaymentTransaction(created.id, buyerAddress);
+    expect(deploySingleReleaseEscrow).toHaveBeenCalledWith(expect.objectContaining({ digitalDelivery: true }));
+
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ hasShipping: false, status: "aguardando_pagamento", escrowContractId: "CDIGITAL", escrowAmountUsdc: 9.77, sellerAddress, timeline: [...digitalTimeline] })
+    );
+    waitForEscrowState.mockResolvedValueOnce({
+      balance: 9.77,
+      flags: { disputed: false, released: false, resolved: false },
+      milestones: [],
+    });
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ hasShipping: false, status: "pago_custodia", escrowContractId: "CDIGITAL", escrowAmountUsdc: 9.77, sellerAddress })
+    );
+    await confirmPayment(created.id);
+
+    // Produto digital: a Holdfy completa o milestone sozinha, sem esperar o
+    // vendedor "marcar como enviado" — markShipped nunca é chamado aqui.
+    expect(completeMilestoneAsPlatform).toHaveBeenCalledWith("CDIGITAL", expect.any(String));
+
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ hasShipping: false, status: "pago_custodia", escrowContractId: "CDIGITAL", escrowAmountUsdc: 9.77, sellerAddress })
+    );
+    waitForEscrowState.mockResolvedValueOnce({
+      balance: 0,
+      flags: { disputed: false, released: true, resolved: false },
+      milestones: [{ status: "Completed", approved: true }],
+    });
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ hasShipping: false, status: "liberado", escrowContractId: "CDIGITAL", escrowAmountUsdc: 9.77, sellerAddress })
+    );
+    await confirmReceipt(created.id);
+    expect(orderUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: { status: "liberado" } }));
+  });
+});
