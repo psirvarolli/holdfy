@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { buildPaymentTransaction } from "@/lib/server/orders";
-import { parseJsonBody, stellarAddress } from "@/lib/server/validation";
-
-const schema = z.object({ buyerAddress: stellarAddress });
+import { getSessionAddress } from "@/lib/server/wallet-session";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const parsed = await parseJsonBody(request, schema);
-  if ("error" in parsed) return parsed.error;
+
+  const address = await getSessionAddress(request);
+  if (!address) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
 
   try {
-    const result = await buildPaymentTransaction(id, parsed.data.buyerAddress);
+    // buyerAddress vem sempre da sessão verificada, nunca do corpo — é quem
+    // está logado que está pagando, ponto.
+    const result = await buildPaymentTransaction(id, address);
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Falha ao preparar o pagamento.";

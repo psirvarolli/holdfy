@@ -1,17 +1,22 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { buildDisputeTransaction } from "@/lib/server/orders";
-import { parseJsonBody, userRole } from "@/lib/server/validation";
-
-const schema = z.object({ openedBy: userRole });
+import { buildDisputeTransaction, getOrder, resolveOrderRole } from "@/lib/server/orders";
+import { getSessionAddress } from "@/lib/server/wallet-session";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const parsed = await parseJsonBody(request, schema);
-  if ("error" in parsed) return parsed.error;
+
+  const address = await getSessionAddress(request);
+  if (!address) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
+  const existing = await getOrder(id);
+  const role = existing ? resolveOrderRole(existing, address) : null;
+  if (!role) {
+    return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 });
+  }
 
   try {
-    const result = await buildDisputeTransaction(id, parsed.data.openedBy);
+    const result = await buildDisputeTransaction(id, role);
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Falha ao preparar a disputa.";

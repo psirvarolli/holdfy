@@ -54,7 +54,7 @@ export function DisputeSheet({ orderId, perspective = "comprador" }: DisputeShee
     setError(null);
     try {
       const fullReason = details.trim() ? `${reason} — ${details.trim()}` : reason;
-      await openDispute(orderId, fullReason, perspective);
+      await openDispute(orderId, fullReason);
       setOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao abrir a disputa.");

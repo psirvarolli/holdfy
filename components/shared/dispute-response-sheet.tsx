@@ -12,15 +12,8 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useOrders } from "@/lib/orders-context";
-import type { UserRole } from "@/lib/types";
 
-export function DisputeResponseSheet({
-  orderId,
-  respondingAs,
-}: {
-  orderId: string;
-  respondingAs: UserRole;
-}) {
+export function DisputeResponseSheet({ orderId }: { orderId: string }) {
   const { respondToDispute } = useOrders();
   const [open, setOpen] = useState(false);
   const [response, setResponse] = useState("");
@@ -37,7 +30,7 @@ export function DisputeResponseSheet({
     // evidências para quem vai resolver, antes do painel de resolução; o
     // que de fato vai on-chain é só o valor de cada lado, assinado 2-de-2
     // (servidor + a pessoa que resolveu, via Freighter).
-    await respondToDispute(orderId, response.trim(), respondingAs);
+    await respondToDispute(orderId, response.trim());
     setOpen(false);
   }
 

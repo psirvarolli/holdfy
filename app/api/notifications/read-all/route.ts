@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { markAllNotificationsRead } from "@/lib/server/notifications";
-import { parseJsonBody, userRole } from "@/lib/server/validation";
-import { z } from "zod";
-
-const schema = z.object({ role: userRole });
+import { getSessionAddress } from "@/lib/server/wallet-session";
 
 export async function POST(request: Request) {
-  const parsed = await parseJsonBody(request, schema);
-  if ("error" in parsed) return parsed.error;
+  const address = await getSessionAddress(request);
+  if (!address) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
 
-  await markAllNotificationsRead(parsed.data.role);
+  await markAllNotificationsRead(address);
   return NextResponse.json({ ok: true });
 }

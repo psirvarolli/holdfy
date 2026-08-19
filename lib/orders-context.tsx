@@ -24,15 +24,15 @@ interface OrdersContextValue {
   createOrder: (input: NewOrderInput) => Promise<Order>;
   payOrder: (id: string) => Promise<void>;
   confirmReceipt: (id: string) => Promise<void>;
-  openDispute: (id: string, reason: string, openedBy: UserRole) => Promise<void>;
+  openDispute: (id: string, reason: string) => Promise<void>;
   markShipped: (id: string, trackingCode: string) => Promise<void>;
-  respondToDispute: (id: string, response: string, respondedBy: UserRole) => Promise<void>;
+  respondToDispute: (id: string, response: string) => Promise<void>;
   // Exposto para o painel admin de disputas, que assina fora do fluxo Pollar
   // (via Freighter, ver components/shared/dispute-resolution-panel.tsx) e
   // por isso não passa pelas ações acima — só precisa gravar o resultado
   // final no estado compartilhado.
   upsertOrder: (order: Order) => void;
-  cancelOrder: (id: string, cancelledBy: UserRole) => Promise<void>;
+  cancelOrder: (id: string) => Promise<void>;
   addEvidence: (
     id: string,
     file: File,
@@ -94,9 +94,14 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     return order;
   }
 
+  // O papel de quem chama (openedBy/respondedBy/cancelledBy) não é mais
+  // passado nem lido aqui — o servidor deriva o papel de verdade comparando
+  // a sessão de carteira com sellerAddress/buyerAddress do próprio pedido
+  // (ver resolveOrderRole em lib/server/orders.ts).
+
   async function payOrder(id: string) {
     if (!wallet) throw new Error("Sua carteira ainda não está pronta. Aguarde um instante e tente de novo.");
-    await buildSignAndSubmit(`/api/orders/${id}/pay/build`, { buyerAddress: wallet.address }, signAndSubmitTx);
+    await buildSignAndSubmit(`/api/orders/${id}/pay/build`, {}, signAndSubmitTx);
     const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/pay/confirm`);
     upsertOrder(order);
   }
@@ -108,12 +113,9 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     upsertOrder(order);
   }
 
-  async function openDispute(id: string, reason: string, openedBy: UserRole) {
-    await buildSignAndSubmit(`/api/orders/${id}/dispute/build`, { openedBy }, signAndSubmitTx);
-    const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/dispute`, {
-      reason,
-      openedBy,
-    });
+  async function openDispute(id: string, reason: string) {
+    await buildSignAndSubmit(`/api/orders/${id}/dispute/build`, {}, signAndSubmitTx);
+    const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/dispute`, { reason });
     upsertOrder(order);
   }
 
@@ -123,16 +125,13 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     upsertOrder(order);
   }
 
-  async function respondToDispute(id: string, response: string, respondedBy: UserRole) {
-    const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/dispute/respond`, {
-      response,
-      respondedBy,
-    });
+  async function respondToDispute(id: string, response: string) {
+    const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/dispute/respond`, { response });
     upsertOrder(order);
   }
 
-  async function cancelOrder(id: string, cancelledBy: UserRole) {
-    const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/cancel`, { cancelledBy });
+  async function cancelOrder(id: string) {
+    const { order } = await postJson<{ order: Order }>(`/api/orders/${id}/cancel`, {});
     upsertOrder(order);
   }
 

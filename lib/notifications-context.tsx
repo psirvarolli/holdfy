@@ -1,8 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { useRole } from "@/lib/role-context";
-import type { Notification, UserRole } from "@/lib/types";
+import type { Notification } from "@/lib/types";
 
 const POLL_INTERVAL_MS = 20_000;
 
@@ -16,20 +15,23 @@ interface NotificationsContextValue {
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
 
-function fetchNotifications(role: UserRole): Promise<Notification[]> {
-  return fetch(`/api/notifications?role=${role}`)
+// Sem parâmetro de papel — o servidor identifica quem está perguntando pela
+// sessão de carteira (cookie), não mais por um "role" que o cliente
+// declarava (ver auditoria de mainnet: isso deixava a atividade de todo
+// mundo visível pra quem quer que chamasse a rota, sem login nenhum).
+function fetchNotifications(): Promise<Notification[]> {
+  return fetch("/api/notifications")
     .then((res) => (res.ok ? res.json() : { notifications: [] }))
     .then((data: { notifications: Notification[] }) => data.notifications ?? []);
 }
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const { role } = useRole();
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     const tick = () => {
-      fetchNotifications(role)
+      fetchNotifications()
         .then((list) => {
           if (!cancelled) setNotifications(list);
         })
@@ -43,10 +45,10 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [role]);
+  }, []);
 
   function refresh() {
-    fetchNotifications(role)
+    fetchNotifications()
       .then((list) => setNotifications(list))
       .catch(() => {});
   }
@@ -58,11 +60,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   async function markAllAsRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    await fetch("/api/notifications/read-all", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role }),
-    });
+    await fetch("/api/notifications/read-all", { method: "POST" });
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length;

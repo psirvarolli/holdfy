@@ -69,7 +69,7 @@ export function OrderActions({ order }: { order: Order }) {
     setIsCancelling(true);
     setCancelError(null);
     try {
-      await cancelOrder(order.id, role);
+      await cancelOrder(order.id);
     } catch (error) {
       setCancelError(error instanceof Error ? error.message : "Falha ao cancelar o pedido.");
     } finally {
@@ -138,7 +138,7 @@ export function OrderActions({ order }: { order: Order }) {
               <span className="text-body-md">Sua resposta foi enviada e está em análise pela Holdfy.</span>
             </div>
           ) : (
-            <DisputeResponseSheet orderId={order.id} respondingAs="vendedor" />
+            <DisputeResponseSheet orderId={order.id} />
           )}
         </Card>
       );
@@ -283,7 +283,7 @@ export function OrderActions({ order }: { order: Order }) {
             <span className="text-body-md">Sua resposta foi enviada e está em análise pela Holdfy.</span>
           </div>
         ) : (
-          <DisputeResponseSheet orderId={order.id} respondingAs="comprador" />
+          <DisputeResponseSheet orderId={order.id} />
         )}
       </Card>
     );

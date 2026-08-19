@@ -145,6 +145,17 @@ export async function getOrder(id: string): Promise<Order | null> {
   return order ? toApiOrder(order) : null;
 }
 
+// Deriva o papel real de quem está chamando a partir do endereço da sessão
+// verificada, em vez de confiar num campo "openedBy"/"respondedBy"/
+// "cancelledBy" que o próprio cliente informa — antes disso, nada impedia um
+// comprador de se declarar "vendedor" nessas rotas. Retorna null se o
+// endereço não é nem o comprador nem o vendedor deste pedido específico.
+export function resolveOrderRole(order: Order, address: string): UserRole | null {
+  if (order.sellerAddress === address) return "vendedor";
+  if (order.buyerAddress === address) return "comprador";
+  return null;
+}
+
 // Usado pelo bot de WhatsApp (repositório separado) para "Meus Pedidos" —
 // lista os pedidos em que o número deu como comprador. Não cobre pedidos em
 // que a pessoa é vendedora, já que Order não tem um campo sellerPhone hoje.
@@ -287,7 +298,8 @@ export async function cancelOrder(id: string, cancelledBy: UserRole): Promise<Or
 
   await prisma.order.update({ where: { id: order.id }, data: { status: "cancelado" } });
   const otherParty = cancelledBy === "comprador" ? "vendedor" : "comprador";
-  await createNotification(order.id, otherParty, `O pedido ${order.displayId} foi cancelado.`);
+  const otherPartyAddress = otherParty === "vendedor" ? order.sellerAddress : order.buyerAddress;
+  await createNotification(order.id, otherParty, otherPartyAddress, `O pedido ${order.displayId} foi cancelado.`);
 
   return getOrder(order.id);
 }
@@ -422,7 +434,7 @@ export async function confirmPayment(id: string): Promise<Order | null> {
     prisma.order.update({ where: { id: order.id }, data: { status: "pago_custodia" } }),
     ...stepUpdates,
   ]);
-  await createNotification(order.id, "vendedor", `O comprador pagou o pedido ${order.displayId}.`);
+  await createNotification(order.id, "vendedor", order.sellerAddress, `O comprador pagou o pedido ${order.displayId}.`);
 
   return getOrder(order.id);
 }
@@ -490,6 +502,7 @@ export async function confirmReceipt(id: string): Promise<Order | null> {
   await createNotification(
     order.id,
     "vendedor",
+    order.sellerAddress,
     `O comprador confirmou o recebimento do pedido ${order.displayId} — o valor foi liberado.`
   );
 
@@ -565,7 +578,7 @@ export async function markShipped(id: string, trackingCode: string): Promise<Ord
     }),
     ...stepUpdates,
   ]);
-  await createNotification(order.id, "comprador", `O vendedor enviou o pedido ${order.displayId}.`);
+  await createNotification(order.id, "comprador", order.buyerAddress, `O vendedor enviou o pedido ${order.displayId}.`);
 
   return getOrder(order.id);
 }
@@ -619,7 +632,8 @@ export async function openDispute(
     },
   });
   const otherParty = openedBy === "comprador" ? "vendedor" : "comprador";
-  await createNotification(order.id, otherParty, `Uma disputa foi aberta no pedido ${order.displayId}.`);
+  const otherPartyAddress = otherParty === "vendedor" ? order.sellerAddress : order.buyerAddress;
+  await createNotification(order.id, otherParty, otherPartyAddress, `Uma disputa foi aberta no pedido ${order.displayId}.`);
 
   return getOrder(order.id);
 }
@@ -639,9 +653,11 @@ export async function respondToDispute(
     data: respondedBy === "vendedor" ? { sellerResponse: response } : { buyerResponse: response },
   });
   const otherParty = respondedBy === "comprador" ? "vendedor" : "comprador";
+  const otherPartyAddress = otherParty === "vendedor" ? order.sellerAddress : order.buyerAddress;
   await createNotification(
     order.id,
     otherParty,
+    otherPartyAddress,
     `Uma resposta foi enviada na disputa do pedido ${order.displayId}.`
   );
 
@@ -706,8 +722,8 @@ export async function submitDisputeResolutionForAdmin(
     },
   });
   const resolvedMessage = `A disputa do pedido ${order.displayId} foi resolvida pela Holdfy.`;
-  await createNotification(order.id, "comprador", resolvedMessage);
-  await createNotification(order.id, "vendedor", resolvedMessage);
+  await createNotification(order.id, "comprador", order.buyerAddress, resolvedMessage);
+  await createNotification(order.id, "vendedor", order.sellerAddress, resolvedMessage);
 
   return getOrder(order.id);
 }

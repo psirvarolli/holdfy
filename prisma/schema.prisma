@@ -134,12 +134,21 @@ model Notification {
   id            String   @id @default(cuid())
   orderId       String
   order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  recipientRole String // "comprador" | "vendedor"
+  recipientRole String // "comprador" | "vendedor" — só rótulo, quem decide quem lê é recipientAddress
+  // Carteira Stellar de quem deve ver esta notificação — sellerAddress ou
+  // buyerAddress do pedido, dependendo de recipientRole. Nullable porque um
+  // pedido pode ser cancelado antes do comprador ter uma carteira associada
+  // (buyerAddress só existe a partir do pagamento) — nesse caso não há pra
+  // quem notificar ainda, e createNotification pula a gravação. Antes deste
+  // campo existir, GET /api/notifications só filtrava por recipientRole,
+  // devolvendo a atividade de todo mundo pra quem quer que chamasse a rota
+  // sem estar logado — ver auditoria de mainnet.
+  recipientAddress String?
   message       String
   read          Boolean  @default(false)
   createdAt     DateTime @default(now())
 
-  @@index([recipientRole, read])
+  @@index([recipientAddress, read])
 }
 
 // Evidência de envio/recebimento — foto e vídeo que vendedor (embalando) e

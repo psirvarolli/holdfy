@@ -156,7 +156,12 @@ describe("confirmPayment — verifica o pagamento on-chain antes de gravar", () 
     expect(predicate({ balance: 19.55 })).toBe(true);
     expect(predicate({ balance: 19.54 })).toBe(false); // não bastaria pagar o total em reais achando que é USDC
     expect(transaction).toHaveBeenCalled();
-    expect(createNotification).toHaveBeenCalledWith("order-1", "vendedor", expect.stringContaining("pagou"));
+    expect(createNotification).toHaveBeenCalledWith(
+      "order-1",
+      "vendedor",
+      order.sellerAddress,
+      expect.stringContaining("pagou")
+    );
     expect(completeMilestoneAsPlatform).not.toHaveBeenCalled(); // produto físico não pula a etapa de envio
   });
 
@@ -214,7 +219,8 @@ describe("markShipped — verifica o milestone on-chain antes de gravar", () => 
   });
 
   it("confirma o envio e notifica o comprador quando o milestone está 'Completed'", async () => {
-    findFirst.mockResolvedValueOnce(makeOrder({ status: "pago_custodia" }));
+    const order = makeOrder({ status: "pago_custodia" });
+    findFirst.mockResolvedValueOnce(order);
     waitForEscrowState.mockResolvedValueOnce({
       balance: 19.55,
       flags: { disputed: false, released: false, resolved: false },
@@ -225,7 +231,12 @@ describe("markShipped — verifica o milestone on-chain antes de gravar", () => 
     await markShipped("order-1", "BR123");
 
     expect(transaction).toHaveBeenCalled();
-    expect(createNotification).toHaveBeenCalledWith("order-1", "comprador", expect.stringContaining("enviou"));
+    expect(createNotification).toHaveBeenCalledWith(
+      "order-1",
+      "comprador",
+      order.buyerAddress,
+      expect.stringContaining("enviou")
+    );
   });
 });
 
@@ -238,7 +249,8 @@ describe("confirmReceipt — verifica a liberação on-chain antes de gravar", (
   });
 
   it("libera e notifica o vendedor quando o escrow confirma 'released'", async () => {
-    findFirst.mockResolvedValueOnce(makeOrder({ status: "em_transito" }));
+    const order = makeOrder({ status: "em_transito" });
+    findFirst.mockResolvedValueOnce(order);
     waitForEscrowState.mockResolvedValueOnce({
       balance: 0,
       flags: { disputed: false, released: true, resolved: false },
@@ -249,13 +261,19 @@ describe("confirmReceipt — verifica a liberação on-chain antes de gravar", (
     await confirmReceipt("order-1");
 
     expect(transaction).toHaveBeenCalled();
-    expect(createNotification).toHaveBeenCalledWith("order-1", "vendedor", expect.stringContaining("liberado"));
+    expect(createNotification).toHaveBeenCalledWith(
+      "order-1",
+      "vendedor",
+      order.sellerAddress,
+      expect.stringContaining("liberado")
+    );
   });
 });
 
 describe("cancelOrder — só permite cancelar antes do pagamento", () => {
   it("cancela um pedido aguardando pagamento e avisa o outro lado", async () => {
-    findFirst.mockResolvedValueOnce(makeOrder({ status: "aguardando_pagamento" }));
+    const order = makeOrder({ status: "aguardando_pagamento" });
+    findFirst.mockResolvedValueOnce(order);
     findFirst.mockResolvedValueOnce(makeOrder({ status: "cancelado" }));
 
     await cancelOrder("order-1", "comprador");
@@ -263,7 +281,12 @@ describe("cancelOrder — só permite cancelar antes do pagamento", () => {
     expect(orderUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: "cancelado" } })
     );
-    expect(createNotification).toHaveBeenCalledWith("order-1", "vendedor", expect.stringContaining("cancelado"));
+    expect(createNotification).toHaveBeenCalledWith(
+      "order-1",
+      "vendedor",
+      order.sellerAddress,
+      expect.stringContaining("cancelado")
+    );
   });
 
   it("recusa cancelar um pedido que já foi pago", async () => {
@@ -475,9 +498,24 @@ describe("ciclo de vida completo de um pedido", () => {
     await confirmReceipt(created.id);
     expect(orderUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: { status: "liberado" } }));
 
-    expect(createNotification).toHaveBeenCalledWith(created.id, "vendedor", expect.stringContaining("pagou"));
-    expect(createNotification).toHaveBeenCalledWith(created.id, "comprador", expect.stringContaining("enviou"));
-    expect(createNotification).toHaveBeenCalledWith(created.id, "vendedor", expect.stringContaining("liberado"));
+    expect(createNotification).toHaveBeenCalledWith(
+      created.id,
+      "vendedor",
+      sellerAddress,
+      expect.stringContaining("pagou")
+    );
+    expect(createNotification).toHaveBeenCalledWith(
+      created.id,
+      "comprador",
+      buyerAddress,
+      expect.stringContaining("enviou")
+    );
+    expect(createNotification).toHaveBeenCalledWith(
+      created.id,
+      "vendedor",
+      sellerAddress,
+      expect.stringContaining("liberado")
+    );
   });
 
   it("produto digital: pula a etapa de envio — libera assim que o pagamento é confirmado", async () => {

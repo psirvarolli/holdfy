@@ -1,4 +1,5 @@
 import "server-only";
+import { lookup as dnsLookup } from "node:dns/promises";
 import * as cheerio from "cheerio";
 import {
   detectMarketplaceName,
@@ -11,6 +12,97 @@ const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
 
 export class MarketplaceFetchError extends Error {}
+
+// Faixas de IPv4 que não são endereço público de verdade — loopback, redes
+// privadas, link-local (inclui 169.254.169.254, o endpoint de metadados
+// clássico de nuvem AWS/GCP/Azure), CGNAT, multicast e reservado.
+const BLOCKED_IPV4_RANGES: [number, number][] = [
+  [ipv4ToInt("0.0.0.0"), ipv4ToInt("0.255.255.255")],
+  [ipv4ToInt("10.0.0.0"), ipv4ToInt("10.255.255.255")],
+  [ipv4ToInt("100.64.0.0"), ipv4ToInt("100.127.255.255")],
+  [ipv4ToInt("127.0.0.0"), ipv4ToInt("127.255.255.255")],
+  [ipv4ToInt("169.254.0.0"), ipv4ToInt("169.254.255.255")],
+  [ipv4ToInt("172.16.0.0"), ipv4ToInt("172.31.255.255")],
+  [ipv4ToInt("192.0.0.0"), ipv4ToInt("192.0.0.255")],
+  [ipv4ToInt("192.168.0.0"), ipv4ToInt("192.168.255.255")],
+  [ipv4ToInt("198.18.0.0"), ipv4ToInt("198.19.255.255")],
+  [ipv4ToInt("224.0.0.0"), ipv4ToInt("255.255.255.255")],
+];
+
+function ipv4ToInt(ip: string): number {
+  return ip.split(".").reduce((acc, part) => acc * 256 + Number(part), 0);
+}
+
+function isBlockedIpv4(ip: string): boolean {
+  const value = ipv4ToInt(ip);
+  return BLOCKED_IPV4_RANGES.some(([start, end]) => value >= start && value <= end);
+}
+
+function isBlockedIpv6(ip: string): boolean {
+  const normalized = ip.toLowerCase();
+  if (normalized === "::1") return true; // loopback
+  if (normalized.startsWith("fe80:") || normalized.startsWith("fe8") || normalized.startsWith("fe9") || normalized.startsWith("fea") || normalized.startsWith("feb")) return true; // link-local
+  if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true; // unique local (fc00::/7)
+  // Endereço IPv4 mapeado em IPv6 (::ffff:a.b.c.d) — confere o IPv4 real por trás.
+  const mapped = normalized.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (mapped) return isBlockedIpv4(mapped[1]);
+  return false;
+}
+
+// Proteção contra SSRF: resolve o host antes de buscar e recusa qualquer
+// endereço que não seja claramente público — sem isso, alguém podia colar
+// um link tipo http://169.254.169.254/... ou http://localhost:PORT/... e
+// fazer o servidor da Holdfy sondar sua própria rede interna (ver auditoria
+// de mainnet). Confere de novo pra cada nova URL de redirecionamento (ver
+// fetchWithSsrfProtection abaixo) — resolver só a URL original não adianta
+// se o servidor de destino redireciona pra um endereço interno depois.
+async function assertPublicHost(url: URL): Promise<void> {
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new MarketplaceFetchError("Link inválido — use um endereço http(s).");
+  }
+
+  let addresses: { address: string; family: number }[];
+  try {
+    addresses = await dnsLookup(url.hostname, { all: true });
+  } catch {
+    throw new MarketplaceFetchError("Não consegui resolver esse endereço — confira o link.");
+  }
+
+  for (const { address, family } of addresses) {
+    const blocked = family === 4 ? isBlockedIpv4(address) : isBlockedIpv6(address);
+    if (blocked) {
+      throw new MarketplaceFetchError(
+        "Esse link não é permitido — preencha os dados manualmente."
+      );
+    }
+  }
+}
+
+// redirect: "manual" em vez de deixar o fetch seguir sozinho — um redirect
+// pra um endereço interno só apareceria como resposta 3xx aqui, nunca sendo
+// buscado sem antes passar por assertPublicHost de novo. Limita a poucos
+// saltos pra não virar um jeito de travar a requisição.
+async function fetchWithSsrfProtection(startUrl: string, signal: AbortSignal): Promise<Response> {
+  let current = new URL(startUrl);
+  for (let hop = 0; hop < 5; hop++) {
+    await assertPublicHost(current);
+    const res = await fetch(current, {
+      headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
+      redirect: "manual",
+      signal,
+    });
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      if (!location) {
+        throw new MarketplaceFetchError("Não consegui acessar esse link — preencha os dados manualmente.");
+      }
+      current = new URL(location, current);
+      continue;
+    }
+    return res;
+  }
+  throw new MarketplaceFetchError("Esse link redireciona demais — preencha os dados manualmente.");
+}
 
 // Converte "R$ 1.234,56" (formato brasileiro) ou "1234.56" (já numérico, como
 // o schema.org pede) para um número. Tenta detectar qual formato é: se tem
@@ -123,10 +215,7 @@ export async function fetchMarketplaceListing(url: string): Promise<MarketplaceL
 
   let html: string;
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
-      signal: controller.signal,
-    });
+    const res = await fetchWithSsrfProtection(url, controller.signal);
     if (!res.ok) {
       throw new MarketplaceFetchError(
         "Não consegui acessar esse link (o site recusou a conexão) — preencha os dados manualmente."
