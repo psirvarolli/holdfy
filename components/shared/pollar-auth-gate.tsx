@@ -5,9 +5,11 @@ import type { ReactNode } from "react";
 import { Logo } from "@/components/shared/logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEnsureWalletSession } from "@/lib/wallet-session-client";
 
 export function PollarAuthGate({ children }: { children: ReactNode }) {
   const { isAuthenticated, openLoginModal } = usePollar();
+  useEnsureWalletSession();
 
   if (!isAuthenticated) {
     return (

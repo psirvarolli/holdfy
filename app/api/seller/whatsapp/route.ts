@@ -7,6 +7,7 @@ import {
   unlinkSellerWhatsapp,
 } from "@/lib/server/seller-whatsapp";
 import { parseJsonBody, stellarAddress, e164Phone } from "@/lib/server/validation";
+import { getSessionAddress } from "@/lib/server/wallet-session";
 
 // Aceita `sellerAddress` (tela de Configurações, consultando o próprio
 // vínculo) ou `phone` (bot de WhatsApp, resolvendo de qual vendedor é esse
@@ -34,17 +35,19 @@ export async function GET(request: Request) {
   return NextResponse.json({ link });
 }
 
-const linkSchema = z.object({
-  sellerAddress: stellarAddress,
-  phone: e164Phone,
-});
+const linkSchema = z.object({ phone: e164Phone });
 
 export async function POST(request: Request) {
+  const address = await getSessionAddress(request);
+  if (!address) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
+
   const parsed = await parseJsonBody(request, linkSchema);
   if ("error" in parsed) return parsed.error;
 
   try {
-    const link = await linkSellerWhatsapp(parsed.data.sellerAddress, parsed.data.phone);
+    const link = await linkSellerWhatsapp(address, parsed.data.phone);
     return NextResponse.json({ link });
   } catch (error) {
     console.error("Falha ao vincular WhatsApp", error);
@@ -52,12 +55,12 @@ export async function POST(request: Request) {
   }
 }
 
-const unlinkSchema = z.object({ sellerAddress: stellarAddress });
-
 export async function DELETE(request: Request) {
-  const parsed = await parseJsonBody(request, unlinkSchema);
-  if ("error" in parsed) return parsed.error;
+  const address = await getSessionAddress(request);
+  if (!address) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
 
-  await unlinkSellerWhatsapp(parsed.data.sellerAddress);
+  await unlinkSellerWhatsapp(address);
   return NextResponse.json({ ok: true });
 }

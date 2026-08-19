@@ -50,7 +50,7 @@ function WhatsappCard() {
     setSaving(true);
     setError(null);
     try {
-      await linkSellerWhatsapp(wallet.address, normalized);
+      await linkSellerWhatsapp(normalized);
       setEditing(false);
       setPhoneInput("");
       refresh();
@@ -65,7 +65,7 @@ function WhatsappCard() {
     if (!wallet) return;
     setSaving(true);
     try {
-      await unlinkSellerWhatsapp(wallet.address);
+      await unlinkSellerWhatsapp();
       refresh();
     } finally {
       setSaving(false);

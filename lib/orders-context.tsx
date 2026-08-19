@@ -87,10 +87,9 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   }
 
   async function createOrder(input: NewOrderInput): Promise<Order> {
-    const { order } = await postJson<{ order: Order }>("/api/orders", {
-      ...input,
-      sellerAddress: wallet?.address,
-    });
+    // sellerAddress não vai mais no corpo — o servidor deriva da sessão de
+    // carteira verificada por SEP-10 (ver lib/wallet-session-client.ts).
+    const { order } = await postJson<{ order: Order }>("/api/orders", input);
     upsertOrder(order);
     return order;
   }

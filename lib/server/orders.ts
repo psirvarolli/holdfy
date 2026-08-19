@@ -128,6 +128,18 @@ export async function listOrders(): Promise<Order[]> {
   return orders.map(toApiOrder);
 }
 
+// Usado por GET /api/orders quando há sessão de carteira verificada (SEP-10)
+// — mostra só os pedidos em que o endereço é vendedor ou comprador, em vez
+// da listagem inteira da plataforma (ver lib/server/wallet-session.ts).
+export async function listOrdersForAddress(address: string): Promise<Order[]> {
+  const orders = await prisma.order.findMany({
+    where: { OR: [{ sellerAddress: address }, { buyerAddress: address }] },
+    include: includeRelations,
+    orderBy: { createdAt: "desc" },
+  });
+  return orders.map(toApiOrder);
+}
+
 export async function getOrder(id: string): Promise<Order | null> {
   const order = await findByIdOrDisplayId(id);
   return order ? toApiOrder(order) : null;

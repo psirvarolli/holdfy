@@ -45,11 +45,13 @@ export function useSellerWhatsapp() {
   };
 }
 
-export async function linkSellerWhatsapp(sellerAddress: string, phone: string): Promise<SellerWhatsappLink> {
+// sellerAddress não vai mais no corpo — o servidor deriva da sessão de
+// carteira verificada por SEP-10 (ver lib/wallet-session-client.ts).
+export async function linkSellerWhatsapp(phone: string): Promise<SellerWhatsappLink> {
   const res = await fetch("/api/seller/whatsapp", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sellerAddress, phone }),
+    body: JSON.stringify({ phone }),
   });
   const data = await res.json().catch(() => null);
   if (!res.ok || !data) {
@@ -58,12 +60,8 @@ export async function linkSellerWhatsapp(sellerAddress: string, phone: string): 
   return data.link;
 }
 
-export async function unlinkSellerWhatsapp(sellerAddress: string): Promise<void> {
-  const res = await fetch("/api/seller/whatsapp", {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sellerAddress }),
-  });
+export async function unlinkSellerWhatsapp(): Promise<void> {
+  const res = await fetch("/api/seller/whatsapp", { method: "DELETE" });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data?.error ?? "Falha ao desvincular o WhatsApp.");
