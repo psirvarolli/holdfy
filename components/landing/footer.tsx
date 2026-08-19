@@ -77,7 +77,8 @@ export function Footer({ theme }: { theme: "light" | "dark" }) {
         <div className="footer-bottom">
           <p className="footer-compliance">{footer.compliance}</p>
           <p className="footer-copy">
-            {footer.copyright} · <a href="/privacidade" className="footer-legal-link">Política de Privacidade</a>
+            {footer.copyright} · <a href="/termos" className="footer-legal-link">Termos de Uso</a> ·{" "}
+            <a href="/privacidade" className="footer-legal-link">Política de Privacidade</a>
           </p>
         </div>
       </div>

@@ -371,5 +371,28 @@ export function getSellerMetrics(list: Order[]) {
     inEscrowTotal: inEscrow.reduce((sum, o) => sum + o.total, 0),
     completedTotal: completed.reduce((sum, o) => sum + o.total, 0),
     disputedCount: disputed.length,
+    monthOverMonthChangePercent: getMonthOverMonthChangePercent(list),
   };
+}
+
+// Compara quantos pedidos foram criados este mês (calendário, até agora) com
+// o mesmo período do mês anterior — substitui o "+12% este mês" que estava
+// fixo no componente (número de mentirinha da versão mockada da tela, nunca
+// calculado de nada real).
+function getMonthOverMonthChangePercent(list: Order[]): number | null {
+  const now = new Date();
+  const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const dayOfMonth = now.getDate();
+
+  const thisMonthCount = list.filter((o) => new Date(o.createdAt) >= startOfThisMonth).length;
+  // Compara só até o mesmo dia do mês anterior, pra não comparar um mês
+  // inteiro com um mês ainda em andamento.
+  const lastMonthSoFarCount = list.filter((o) => {
+    const created = new Date(o.createdAt);
+    return created >= startOfLastMonth && created < new Date(startOfLastMonth.getFullYear(), startOfLastMonth.getMonth(), dayOfMonth + 1);
+  }).length;
+
+  if (lastMonthSoFarCount === 0) return null; // sem base de comparação — não mostra a variação
+  return Math.round(((thisMonthCount - lastMonthSoFarCount) / lastMonthSoFarCount) * 100);
 }

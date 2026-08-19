@@ -3,6 +3,7 @@ import { z } from "zod";
 import { addEvidence } from "@/lib/server/evidence";
 import { getOrder } from "@/lib/server/orders";
 import { evidenceStage, evidenceType, userRole, parseJsonBody } from "@/lib/server/validation";
+import { getSessionAddress } from "@/lib/server/wallet-session";
 
 const schema = z.object({
   stage: evidenceStage,
@@ -13,6 +14,16 @@ const schema = z.object({
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
+  const address = await getSessionAddress(request);
+  if (!address) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
+  const order = await getOrder(id);
+  if (!order || (order.sellerAddress !== address && order.buyerAddress !== address)) {
+    return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
+  }
+
   const parsed = await parseJsonBody(request, schema);
   if ("error" in parsed) return parsed.error;
 

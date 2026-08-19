@@ -14,6 +14,10 @@ export function SellerDashboard() {
   const { orders } = useOrders();
   const metrics = getSellerMetrics(orders);
   const recentOrders = orders.slice(0, 4);
+  const changeLabel =
+    metrics.monthOverMonthChangePercent === null
+      ? undefined
+      : `${metrics.monthOverMonthChangePercent >= 0 ? "+" : ""}${metrics.monthOverMonthChangePercent}% este mês`;
 
   return (
     <div className="flex flex-col gap-8">
@@ -28,13 +32,13 @@ export function SellerDashboard() {
           icon={ShieldCheck}
           label="Vendas Protegidas"
           value={String(metrics.protectedSalesCount)}
-          helperText="+12% este mês"
+          helperText={changeLabel}
         />
         <EscrowCard
           icon={Lock}
           label="Em Custódia Agora"
           value={formatCurrency(metrics.inEscrowTotal)}
-          helperText="Disponível em 5 dias"
+          helperText="Liberado quando o comprador confirmar"
         />
         <EscrowCard
           icon={CheckCircle2}
