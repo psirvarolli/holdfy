@@ -15,6 +15,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 const {
+  listPlans,
   resolveFeeForNewEscrow,
   getMaxTxValueForSeller,
   getActivePlanForSeller,
@@ -74,6 +75,19 @@ beforeEach(() => {
     if (where.slug === "pro") return Promise.resolve(PRO);
     if (where.slug === "enterprise") return Promise.resolve(ENTERPRISE);
     return Promise.resolve(null);
+  });
+});
+
+describe("listPlans — ordem de exibição na tela de Planos", () => {
+  it("mostra sempre Starter, Pro, Enterprise, mesmo que o banco devolva em outra ordem", async () => {
+    // Starter e Enterprise empatam em monthlyPriceReais (R$0) — o banco pode
+    // devolver em qualquer ordem entre eles; a exibição não pode depender
+    // disso.
+    planFindMany.mockResolvedValueOnce([ENTERPRISE, STARTER, PRO]);
+
+    const plans = await listPlans();
+
+    expect(plans.map((p) => p.slug)).toEqual(["starter", "pro", "enterprise"]);
   });
 });
 

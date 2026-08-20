@@ -15,9 +15,16 @@ function toApiPlan(plan: DbPlan): Plan {
   };
 }
 
+// Ordem de exibição fixa por tier — não dá pra ordenar por
+// monthlyPriceReais porque Starter e Enterprise empatam em R$0 (o preço do
+// Enterprise é negociado à parte), o que deixava a ordem instável.
+const PLAN_DISPLAY_ORDER: Record<PlanSlug, number> = { starter: 0, pro: 1, enterprise: 2 };
+
 export async function listPlans(): Promise<Plan[]> {
-  const plans = await prisma.plan.findMany({ orderBy: { monthlyPriceReais: "asc" } });
-  return plans.map(toApiPlan);
+  const plans = await prisma.plan.findMany();
+  return plans
+    .map(toApiPlan)
+    .sort((a, b) => PLAN_DISPLAY_ORDER[a.slug] - PLAN_DISPLAY_ORDER[b.slug]);
 }
 
 export async function getPlanBySlug(slug: PlanSlug) {
