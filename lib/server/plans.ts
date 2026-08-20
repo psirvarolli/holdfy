@@ -70,6 +70,12 @@ function decodeProOrderNsu(orderNsu: string): { sellerAddress: string } | null {
 // app/api/infinitepay/webhook/route.ts). Renovar antes de vencer soma a
 // partir do vencimento atual, não a partir de hoje, pra não perder dias já
 // pagos; renovar depois de vencido conta a partir de agora.
+//
+// O checkPayment da InfinitePay não é de uso único — um order_nsu já pago
+// continua respondendo "paid: true" pra sempre. Sem essa checagem de
+// lastOrderNsu, reenviar o mesmo webhook (de propósito ou por retry) somaria
+// mais 30 dias a cada chamada, virando assinatura vitalícia de graça a
+// partir de um único pagamento real.
 export async function recordProPayment(
   orderNsu: string,
   invoiceSlug: string
@@ -83,6 +89,10 @@ export async function recordProPayment(
   const existing = await prisma.sellerSubscription.findUnique({
     where: { sellerAddress: decoded.sellerAddress },
   });
+  if (existing?.lastOrderNsu === orderNsu) {
+    return decoded;
+  }
+
   const base = existing && existing.currentPeriodEnd > new Date() ? existing.currentPeriodEnd : new Date();
   const currentPeriodEnd = new Date(base.getTime() + PRO_PAYMENT_PERIOD_DAYS * 24 * 60 * 60 * 1000);
 

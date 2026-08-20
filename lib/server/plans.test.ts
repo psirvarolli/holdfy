@@ -246,4 +246,32 @@ describe("encodeProOrderNsu / recordProPayment — confirmação de pagamento do
     expect(daysAhead).toBeGreaterThan(29.9);
     expect(daysAhead).toBeLessThan(30.1);
   });
+
+  it("reenviar o mesmo order_nsu já creditado não soma dias de novo (replay do webhook)", async () => {
+    const orderNsu = encodeProOrderNsu(SELLER);
+    sellerSubscriptionFindUnique.mockResolvedValueOnce({
+      currentPeriodEnd: inFuture(720), // 30 dias, já creditados por esse mesmo order_nsu
+      lastOrderNsu: orderNsu,
+    });
+
+    const result = await recordProPayment(orderNsu, "slug-1");
+
+    expect(result).toEqual({ sellerAddress: SELLER });
+    expect(sellerSubscriptionUpsert).not.toHaveBeenCalled();
+  });
+
+  it("um order_nsu novo do mesmo vendedor soma normalmente (não é o replay que deve ser bloqueado)", async () => {
+    const firstOrderNsu = encodeProOrderNsu(SELLER);
+    // Sufixo garante um order_nsu diferente mesmo que os dois caiam no mesmo
+    // milissegundo — o que importa aqui é só que sejam distintos.
+    const secondOrderNsu = `${firstOrderNsu}-2`;
+    sellerSubscriptionFindUnique.mockResolvedValueOnce({
+      currentPeriodEnd: inFuture(720),
+      lastOrderNsu: firstOrderNsu,
+    });
+
+    await recordProPayment(secondOrderNsu, "slug-2");
+
+    expect(sellerSubscriptionUpsert).toHaveBeenCalledOnce();
+  });
 });
