@@ -122,7 +122,7 @@ export default function PlansPage() {
     setError(null);
     setSubscribingSlug(plan.slug);
     try {
-      const url = await subscribeToPro(wallet.address);
+      const url = await subscribeToPro();
       window.location.assign(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao iniciar a assinatura.");

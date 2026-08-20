@@ -1,13 +1,34 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Gavel } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { OrderRow } from "@/components/shared/order-row";
-import { useOrders } from "@/lib/orders-context";
+import type { Order } from "@/lib/types";
 
 export default function AdminDisputesPage() {
-  const { getOrdersByStatus, isLoading } = useOrders();
-  const disputes = getOrdersByStatus("em_disputa");
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/orders")
+      .then((res) => (res.ok ? res.json() : { orders: [] }))
+      .then((data: { orders: Order[] }) => {
+        if (!cancelled) setOrders(data.orders ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setOrders([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const disputes = orders.filter((order) => order.status === "em_disputa");
 
   return (
     <div className="flex flex-col gap-6">

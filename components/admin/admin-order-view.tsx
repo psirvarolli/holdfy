@@ -1,17 +1,41 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { DisputeResolutionPanel } from "@/components/shared/dispute-resolution-panel";
 import { EvidenceGallery } from "@/components/shared/evidence-gallery";
-import { useOrders } from "@/lib/orders-context";
 import { formatCurrency, formatDate } from "@/lib/format";
+import type { Order } from "@/lib/types";
 
 export function AdminOrderView({ id }: { id: string }) {
-  const { getOrderById, isLoading } = useOrders();
-  const order = getOrderById(id);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Reseta pra "carregando" a cada troca de id (não só na primeira
+    // montagem) — sem isso, navegar de um pedido pro outro mostraria o
+    // conteúdo do pedido anterior por um instante antes do novo chegar.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsLoading(true);
+    fetch(`/api/admin/orders/${id}`)
+      .then((res) => (res.ok ? res.json() : { order: null }))
+      .then((data: { order: Order | null }) => {
+        if (!cancelled) setOrder(data.order);
+      })
+      .catch(() => {
+        if (!cancelled) setOrder(null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   if (isLoading) {
     return (
@@ -91,7 +115,9 @@ export function AdminOrderView({ id }: { id: string }) {
 
       <EvidenceGallery order={order} />
 
-      {order.status === "em_disputa" ? <DisputeResolutionPanel order={order} /> : null}
+      {order.status === "em_disputa" ? (
+        <DisputeResolutionPanel order={order} onResolved={setOrder} />
+      ) : null}
     </div>
   );
 }

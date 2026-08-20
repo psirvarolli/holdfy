@@ -2,17 +2,22 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createPaymentLink } from "@/lib/server/infinitepay";
 import { getPlanBySlug, encodeProOrderNsu } from "@/lib/server/plans";
-import { stellarAddress, planSlug, parseJsonBody } from "@/lib/server/validation";
+import { planSlug, parseJsonBody } from "@/lib/server/validation";
+import { getSessionAddress } from "@/lib/server/wallet-session";
 
 // Só o Pro tem link de pagamento automático — Starter não cobra nada e
 // Enterprise é negociado diretamente com a Holdfy (botão "Fale conosco" na
 // tela de Planos), sem gerar link nenhum aqui.
 const schema = z.object({
-  sellerAddress: stellarAddress,
   planSlug: planSlug.refine((slug) => slug === "pro", "Este plano não tem pagamento automático."),
 });
 
 export async function POST(request: Request) {
+  const address = await getSessionAddress(request);
+  if (!address) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
+
   const parsed = await parseJsonBody(request, schema);
   if ("error" in parsed) return parsed.error;
 
@@ -22,7 +27,9 @@ export async function POST(request: Request) {
   }
 
   const origin = new URL(request.url).origin;
-  const orderNsu = encodeProOrderNsu(parsed.data.sellerAddress);
+  // sellerAddress vem sempre da sessão verificada, nunca do corpo — quem
+  // assina o plano é sempre quem está logado.
+  const orderNsu = encodeProOrderNsu(address);
 
   try {
     const { url } = await createPaymentLink({

@@ -5,7 +5,6 @@ import { Scale, Loader2, Wallet } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useOrders } from "@/lib/orders-context";
 import { networkPassphrase } from "@/lib/stellar-client-network";
 import type { Order } from "@/lib/types";
 
@@ -22,8 +21,13 @@ import type { Order } from "@/lib/types";
 // Trabalha em USDC, não em reais: o valor realmente retido no escrow é o que
 // foi convertido e travado no momento do pagamento (order.escrowAmountUsdc),
 // não o preço de listagem em reais (order.total) — ver lib/server/fx-rate.ts.
-export function DisputeResolutionPanel({ order }: { order: Order }) {
-  const { upsertOrder } = useOrders();
+export function DisputeResolutionPanel({
+  order,
+  onResolved,
+}: {
+  order: Order;
+  onResolved: (order: Order) => void;
+}) {
   const escrowTotal = order.escrowAmountUsdc ?? 0;
   const [buyerAmount, setBuyerAmount] = useState(String(escrowTotal));
   const [sellerAmount, setSellerAmount] = useState("0");
@@ -103,7 +107,7 @@ export function DisputeResolutionPanel({ order }: { order: Order }) {
       const submitData = await submitRes.json();
       if (!submitRes.ok) throw new Error(submitData.error ?? "Falha ao enviar a resolução da disputa.");
 
-      upsertOrder(submitData.order);
+      onResolved(submitData.order);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao resolver a disputa.");
     } finally {

@@ -67,11 +67,11 @@ export function useSellerPlanStatus() {
   };
 }
 
-export async function subscribeToPro(sellerAddress: string): Promise<string> {
+export async function subscribeToPro(): Promise<string> {
   const res = await fetch("/api/plans/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sellerAddress, planSlug: "pro" }),
+    body: JSON.stringify({ planSlug: "pro" }),
   });
   const data = await res.json();
   if (!res.ok) {
