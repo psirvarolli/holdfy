@@ -322,7 +322,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         {
           name: "Starter",
           audience: "Para freelancers e primeiros negócios",
-          price: "5%",
+          price: "4,5%",
           suffix: "por transação concluída",
           features: [
             "Sem mensalidade — pague só quando receber",
@@ -339,7 +339,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           suffix: "por mês + 2,5% por transação",
           features: [
             "10 escrows por mês incluídos",
-            "Excedente do mês cobrado na taxa do Starter (5%)",
+            "Excedente do mês cobrado na taxa do Starter (4,5%)",
             "Contratos com marcos de entrega (milestones)",
             "Mediação de disputas inclusa",
             "Suporte prioritário",
@@ -373,7 +373,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         ],
         rangeMin: "R$ 100",
         rangeMax: "R$ 50.000",
-        starterLabel: "Starter · 5%",
+        starterLabel: "Starter · 4,5%",
         proLabel: "Pro · 2,5%",
         enterpriseLabel: "Enterprise",
         feePrefix: "Taxa Holdfy:",
@@ -403,7 +403,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         },
         {
           q: "Quais são as taxas?",
-          a: "No plano Starter, cobramos 5% sobre o valor da transação, somente quando ela é concluída. Os planos Pro e Enterprise têm taxas menores e recursos adicionais. Não há mensalidade para começar.",
+          a: "No plano Starter, cobramos 4,5% sobre o valor da transação, somente quando ela é concluída. Os planos Pro e Enterprise têm taxas menores e recursos adicionais. Não há mensalidade para começar.",
         },
         {
           q: "É seguro?",
@@ -604,7 +604,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         {
           name: "Starter",
           audience: "Para freelancers y primeros negocios",
-          price: "5%",
+          price: "4,5%",
           suffix: "por transacción concluida",
           features: [
             "Sin mensualidad — paga solo cuando cobres",
@@ -621,7 +621,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           suffix: "por mes + 2,5% por transacción",
           features: [
             "10 escrows por mes incluidos",
-            "Excedente del mes cobrado a la tarifa del Starter (5%)",
+            "Excedente del mes cobrado a la tarifa del Starter (4,5%)",
             "Contratos con hitos de entrega (milestones)",
             "Mediación de disputas incluida",
             "Soporte prioritario",
@@ -655,7 +655,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         ],
         rangeMin: "R$ 100",
         rangeMax: "R$ 50.000",
-        starterLabel: "Starter · 5%",
+        starterLabel: "Starter · 4,5%",
         proLabel: "Pro · 2,5%",
         enterpriseLabel: "Enterprise",
         feePrefix: "Tarifa Holdfy:",
@@ -685,7 +685,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         },
         {
           q: "¿Cuáles son las tarifas?",
-          a: "En el plan Starter cobramos 5% sobre el valor de la transacción, solo cuando se concluye. Los planes Pro y Enterprise tienen tarifas menores y recursos adicionales. No hay mensualidad para empezar.",
+          a: "En el plan Starter cobramos 4,5% sobre el valor de la transacción, solo cuando se concluye. Los planes Pro y Enterprise tienen tarifas menores y recursos adicionales. No hay mensualidad para empezar.",
         },
         {
           q: "¿Es seguro?",
@@ -886,7 +886,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         {
           name: "Starter",
           audience: "For freelancers and first-time deals",
-          price: "5%",
+          price: "4.5%",
           suffix: "per completed transaction",
           features: [
             "No monthly fee — pay only when you get paid",
@@ -903,7 +903,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           suffix: "per month + 2.5% per transaction",
           features: [
             "10 escrows per month included",
-            "Overage billed at the Starter rate (5%)",
+            "Overage billed at the Starter rate (4.5%)",
             "Contracts with delivery milestones",
             "Dispute mediation included",
             "Priority support",
@@ -937,7 +937,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         ],
         rangeMin: "R$100",
         rangeMax: "R$50,000",
-        starterLabel: "Starter · 5%",
+        starterLabel: "Starter · 4.5%",
         proLabel: "Pro · 2.5%",
         enterpriseLabel: "Enterprise",
         feePrefix: "Holdfy fee:",
@@ -967,7 +967,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         },
         {
           q: "What are the fees?",
-          a: "On the Starter plan, we charge 5% of the transaction value, only once it's completed. Pro and Enterprise have lower fees and extra features. There's no monthly fee to get started.",
+          a: "On the Starter plan, we charge 4.5% of the transaction value, only once it's completed. Pro and Enterprise have lower fees and extra features. There's no monthly fee to get started.",
         },
         {
           q: "Is it safe?",

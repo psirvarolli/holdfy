@@ -119,7 +119,7 @@ beforeEach(() => {
   timelineStepUpdate.mockResolvedValue(undefined);
   createNotification.mockResolvedValue(undefined);
   completeMilestoneAsPlatform.mockResolvedValue({ status: "SUCCESS", message: "ok", contractId: "C1", escrow: {} });
-  resolveFeeForNewEscrow.mockResolvedValue({ feePercent: 5, planSlug: "starter" });
+  resolveFeeForNewEscrow.mockResolvedValue({ feePercent: 4.5, planSlug: "starter" });
   getMaxTxValueForSeller.mockResolvedValue(null);
 });
 

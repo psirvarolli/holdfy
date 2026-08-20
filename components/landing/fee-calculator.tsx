@@ -16,10 +16,10 @@ const PRESET_META = [
   { icon: Handshake, value: 25000 },
 ];
 
-const STARTER_RATE = 0.05;
-// Real Pro rate (see prisma/seed.ts PLAN_SEEDS) — this simulator only models
-// the per-transaction percentage, not the R$197/month fee or the 10-escrow
-// monthly quota (above which usage reverts to the Starter rate).
+// Real rates (see prisma/seed.ts PLAN_SEEDS) — this simulator only models
+// the per-transaction percentage, not the R$197/month Pro fee or the
+// 10-escrow monthly quota (above which usage reverts to the Starter rate).
+const STARTER_RATE = 0.045;
 const PRO_RATE = 0.025;
 
 export function FeeCalculator() {

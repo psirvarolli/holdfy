@@ -12,7 +12,7 @@ const PLAN_SEEDS = [
     slug: "starter",
     name: "Starter",
     monthlyPriceReais: 0,
-    feePercent: 5.0,
+    feePercent: 4.5,
     includedEscrows: null,
     maxTxValueReais: 5000,
     isNegotiated: false,

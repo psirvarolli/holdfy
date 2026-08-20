@@ -28,7 +28,7 @@ const STARTER = {
   slug: "starter",
   name: "Starter",
   monthlyPriceReais: 0,
-  feePercent: 5.0,
+  feePercent: 4.5,
   includedEscrows: null,
   maxTxValueReais: 5000,
   isNegotiated: false,
@@ -80,13 +80,13 @@ beforeEach(() => {
 describe("resolveFeeForNewEscrow — decide a taxa aplicada a um escrow novo", () => {
   it("sem sellerAddress, usa a taxa do Starter", async () => {
     const result = await resolveFeeForNewEscrow(undefined);
-    expect(result).toEqual({ feePercent: 5.0, planSlug: "starter" });
+    expect(result).toEqual({ feePercent: 4.5, planSlug: "starter" });
   });
 
   it("vendedor sem nenhuma assinatura cai no Starter", async () => {
     sellerSubscriptionFindUnique.mockResolvedValueOnce(null);
     const result = await resolveFeeForNewEscrow(SELLER);
-    expect(result).toEqual({ feePercent: 5.0, planSlug: "starter" });
+    expect(result).toEqual({ feePercent: 4.5, planSlug: "starter" });
     expect(orderCount).not.toHaveBeenCalled(); // Starter não conta uso mensal
   });
 
@@ -107,7 +107,7 @@ describe("resolveFeeForNewEscrow — decide a taxa aplicada a um escrow novo", (
     });
     orderCount.mockResolvedValueOnce(10);
     const result = await resolveFeeForNewEscrow(SELLER);
-    expect(result).toEqual({ feePercent: 5.0, planSlug: "starter" });
+    expect(result).toEqual({ feePercent: 4.5, planSlug: "starter" });
   });
 
   it("vendedor Enterprise nunca conta uso — sempre a taxa negociada", async () => {
@@ -126,7 +126,7 @@ describe("resolveFeeForNewEscrow — decide a taxa aplicada a um escrow novo", (
       plan: PRO,
     });
     const result = await resolveFeeForNewEscrow(SELLER);
-    expect(result).toEqual({ feePercent: 5.0, planSlug: "starter" });
+    expect(result).toEqual({ feePercent: 4.5, planSlug: "starter" });
   });
 });
 
