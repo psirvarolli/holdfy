@@ -179,37 +179,54 @@ describe("getActivePlanForSeller", () => {
   });
 });
 
-describe("getSellerPlanStatus — o que a tela de Planos mostra", () => {
-  it("status 'active' e uso mensal quando o Pro está dentro do período pago", async () => {
+describe("getSellerPlanStatus — o que a tela de Configurações mostra", () => {
+  it("status 'active' e uso mensal quando o Pro está dentro do período pago e da cota", async () => {
     const periodEnd = inFuture(24);
-    sellerSubscriptionFindUnique
-      .mockResolvedValueOnce({ currentPeriodEnd: periodEnd })
-      .mockResolvedValueOnce({ currentPeriodEnd: periodEnd, plan: PRO });
-    orderCount.mockResolvedValueOnce(3);
+    // mockResolvedValue (não "Once"): getSellerPlanStatus consulta a
+    // assinatura mais de uma vez internamente (inclusive dentro de
+    // resolveFeeForNewEscrow, reaproveitada pra achar a taxa realmente
+    // cobrada) — é sempre o mesmo registro, então o mock deve valer pra
+    // qualquer número de chamadas.
+    sellerSubscriptionFindUnique.mockResolvedValue({ currentPeriodEnd: periodEnd, plan: PRO });
+    orderCount.mockResolvedValue(3);
 
     const status = await getSellerPlanStatus(SELLER);
     expect(status.plan.slug).toBe("pro");
     expect(status.status).toBe("active");
     expect(status.escrowsUsedThisMonth).toBe(3);
+    expect(status.billedFeePercent).toBeUndefined(); // dentro da cota — sem excedente
+  });
+
+  it("estourou a cota mensal do Pro: billedFeePercent aparece com a taxa do Starter", async () => {
+    const periodEnd = inFuture(24);
+    sellerSubscriptionFindUnique.mockResolvedValue({ currentPeriodEnd: periodEnd, plan: PRO });
+    orderCount.mockResolvedValue(10); // já usou os 10 incluídos
+
+    const status = await getSellerPlanStatus(SELLER);
+    expect(status.plan.slug).toBe("pro"); // continua Pro — só a taxa do próximo pedido muda
+    expect(status.escrowsUsedThisMonth).toBe(10);
+    expect(status.billedFeePercent).toBe(STARTER.feePercent);
   });
 
   it("status 'expired' quando o último pagamento já venceu", async () => {
     const periodEnd = inPast(1);
-    // As duas chamadas batem no mesmo registro real — vencido em ambas; é o
+    // As chamadas batem no mesmo registro real — vencido em todas; é o
     // check `currentPeriodEnd <= now` dentro de getActiveSubscription que
     // filtra, não uma diferença no que o banco devolve.
     sellerSubscriptionFindUnique.mockResolvedValue({ currentPeriodEnd: periodEnd, plan: PRO });
     const status = await getSellerPlanStatus(SELLER);
     expect(status.status).toBe("expired");
     expect(status.plan.slug).toBe("starter"); // efetivamente já voltou pro Starter
+    expect(status.billedFeePercent).toBeUndefined(); // já é Starter — não é "excedente"
   });
 
   it("status 'none' e sem uso mensal quando nunca assinou nada", async () => {
-    sellerSubscriptionFindUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    sellerSubscriptionFindUnique.mockResolvedValue(null);
     const status = await getSellerPlanStatus(SELLER);
     expect(status.status).toBe("none");
     expect(status.plan.slug).toBe("starter");
     expect(status.escrowsUsedThisMonth).toBeUndefined();
+    expect(status.billedFeePercent).toBeUndefined();
     expect(orderCount).not.toHaveBeenCalled();
   });
 });

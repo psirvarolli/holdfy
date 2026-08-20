@@ -86,6 +86,11 @@ model Order {
   // vendedor naquele instante e não deve mudar retroativamente se ele trocar
   // de plano depois.
   appliedFeePercent    Float?
+  // Slug do plano usado pra calcular appliedFeePercent — "starter" aqui pode
+  // significar ou que o vendedor é mesmo Starter, ou que é Pro/Enterprise
+  // mas passou da cota mensal e caiu no excedente (cobrado na taxa do
+  // Starter). Sem esse campo, os dois casos ficam indistinguíveis.
+  appliedPlanSlug      String?
 
   items         OrderItem[]
   timeline      OrderTimelineStep[]

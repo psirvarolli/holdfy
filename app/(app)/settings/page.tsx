@@ -332,7 +332,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex flex-col gap-1 rounded-md bg-surface-container-high px-3 py-2">
                 <span className="text-body-md font-semibold text-on-surface">
-                  {planStatus ? `${planStatus.plan.feePercent}%` : "..."}
+                  {planStatus
+                    ? `${planStatus.billedFeePercent ?? planStatus.plan.feePercent}%`
+                    : "..."}
                 </span>
                 <span className="text-label-sm text-on-surface-variant">Taxa por pedido</span>
               </div>
@@ -341,6 +343,13 @@ export default function SettingsPage() {
               <p className="text-label-sm text-on-surface-variant">
                 {planStatus.escrowsUsedThisMonth} de {planStatus.plan.includedEscrows} pedidos
                 incluídos usados este mês.
+              </p>
+            ) : null}
+            {planStatus?.billedFeePercent != null ? (
+              <p className="rounded-md border border-tertiary/30 bg-tertiary-container/30 px-3 py-2 text-label-sm text-tertiary">
+                Você já usou os pedidos incluídos do plano {planStatus.plan.name} este mês —
+                novos pedidos estão sendo cobrados a {planStatus.billedFeePercent}% (taxa do
+                Starter) até o mês virar.
               </p>
             ) : null}
             {planStatus?.plan.maxTxValueReais ? (

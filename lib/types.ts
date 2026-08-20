@@ -83,6 +83,10 @@ export interface Order {
   // Taxa da Holdfy realmente aplicada neste escrow (depende do plano do
   // vendedor no momento do deploy) — undefined até o pedido ser pago.
   appliedFeePercent?: number;
+  // Plano usado pra calcular appliedFeePercent — "starter" pode ser um
+  // vendedor Starter de verdade, ou um Pro/Enterprise em excedente (ver
+  // resolveFeeForNewEscrow em lib/server/plans.ts).
+  appliedPlanSlug?: PlanSlug;
 
   evidence: OrderEvidence[];
 }
@@ -118,11 +122,15 @@ export interface Plan {
 // Starter até ele renovar); "none" quando nunca assinou nada.
 // `escrowsUsedThisMonth`/`includedEscrows` só fazem sentido pra planos com
 // cota mensal (hoje, só o Pro); undefined nos demais.
+// `billedFeePercent` só aparece quando difere de `plan.feePercent` — sinal de
+// que a cota mensal estourou e novos pedidos estão caindo no excedente
+// (cobrado na taxa do Starter) até o mês virar.
 export interface SellerPlanStatus {
   plan: Plan;
   status: "active" | "expired" | "none";
   currentPeriodEnd?: string;
   escrowsUsedThisMonth?: number;
+  billedFeePercent?: number;
 }
 
 export interface Notification {

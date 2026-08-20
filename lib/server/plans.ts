@@ -199,5 +199,13 @@ export async function getSellerPlanStatus(sellerAddress: string): Promise<Seller
     result.escrowsUsedThisMonth = await countEscrowsThisMonth(sellerAddress);
   }
 
+  // Reaproveita a mesma decisão de resolveFeeForNewEscrow (usada no deploy
+  // de verdade) em vez de repetir a lógica de "estourou a cota" aqui — assim
+  // as duas nunca divergem sobre quando o excedente entra em vigor.
+  const billed = await resolveFeeForNewEscrow(sellerAddress);
+  if (billed.feePercent !== plan.feePercent) {
+    result.billedFeePercent = billed.feePercent;
+  }
+
   return result;
 }

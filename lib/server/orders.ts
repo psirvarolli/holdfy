@@ -23,6 +23,7 @@ import type {
   EvidenceStage,
   EvidenceType,
   UserRole,
+  PlanSlug,
 } from "@/lib/types";
 import type {
   Order as DbOrder,
@@ -94,6 +95,7 @@ function toApiOrder(order: OrderWithRelations): Order {
     disputeSellerAmount: order.disputeSellerAmount ?? undefined,
     disputeResolvedAt: order.disputeResolvedAt?.toISOString(),
     appliedFeePercent: order.appliedFeePercent ?? undefined,
+    appliedPlanSlug: (order.appliedPlanSlug as PlanSlug | null) ?? undefined,
     evidence: order.evidence.map((item) => ({
       id: item.id,
       orderId: item.orderId,
@@ -334,7 +336,7 @@ export async function buildPaymentTransaction(
     // uso do mês corrente e decide se ainda está dentro da cota do plano ou
     // se cai no excedente (ver lib/server/plans.ts). Fica travada aqui: se o
     // vendedor trocar de plano depois, não afeta escrows já implantados.
-    const { feePercent } = await resolveFeeForNewEscrow(order.sellerAddress);
+    const { feePercent, planSlug } = await resolveFeeForNewEscrow(order.sellerAddress);
     const deployed = await deploySingleReleaseEscrow({
       engagementId: order.displayId,
       title: order.description,
@@ -353,6 +355,7 @@ export async function buildPaymentTransaction(
         buyerAddress,
         escrowAmountUsdc: usdcAmount,
         appliedFeePercent: feePercent,
+        appliedPlanSlug: planSlug,
         escrowDeployedAt: new Date(),
       },
     });

@@ -101,6 +101,7 @@ function makeOrder(overrides: Partial<OrderFixture> = {}): OrderFixture {
     disputeResolvedAt: null,
     escrowDeployedAt: null,
     appliedFeePercent: null,
+    appliedPlanSlug: null,
     items: [],
     evidence: [],
     timeline: [
@@ -352,7 +353,7 @@ describe("buildPaymentTransaction — usa o valor convertido em USDC, não o tot
     );
   });
 
-  it("usa a taxa resolvida pelo plano do vendedor no deploy e grava appliedFeePercent/escrowDeployedAt", async () => {
+  it("usa a taxa resolvida pelo plano do vendedor no deploy e grava appliedFeePercent/appliedPlanSlug/escrowDeployedAt", async () => {
     findFirst.mockResolvedValueOnce(
       makeOrder({ escrowContractId: null, escrowAmountUsdc: null })
     );
@@ -368,7 +369,32 @@ describe("buildPaymentTransaction — usa o valor convertido em USDC, não o tot
     );
     expect(orderUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ appliedFeePercent: 2.5, escrowDeployedAt: expect.any(Date) }),
+        data: expect.objectContaining({
+          appliedFeePercent: 2.5,
+          appliedPlanSlug: "pro",
+          escrowDeployedAt: expect.any(Date),
+        }),
+      })
+    );
+  });
+
+  it("vendedor Pro em excedente: grava appliedPlanSlug 'starter', distinguindo de um Starter de verdade", async () => {
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ escrowContractId: null, escrowAmountUsdc: null })
+    );
+    convertBrlToUsdc.mockResolvedValueOnce(19.55);
+    // É exatamente o que resolveFeeForNewEscrow devolve quando um vendedor
+    // Pro estourou a cota mensal — a taxa cai pra do Starter, mas o
+    // vendedor continua Pro.
+    resolveFeeForNewEscrow.mockResolvedValueOnce({ feePercent: 4.5, planSlug: "starter" });
+    deploySingleReleaseEscrow.mockResolvedValueOnce({ contractId: "CNEWCONTRACT" });
+    buildFundEscrow.mockResolvedValueOnce({ status: "SUCCESS", unsignedTransaction: "xdr" });
+
+    await buildPaymentTransaction("order-1", "GBUYER01234567890123456789012345678901234567890123456");
+
+    expect(orderUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ appliedFeePercent: 4.5, appliedPlanSlug: "starter" }),
       })
     );
   });
