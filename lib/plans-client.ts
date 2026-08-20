@@ -42,7 +42,9 @@ export function useSellerPlanStatus() {
   useEffect(() => {
     if (!address) return;
     let cancelled = false;
-    fetch(`/api/plans/status?sellerAddress=${encodeURIComponent(address)}`)
+    // sellerAddress não vai mais na URL — o servidor deriva da sessão de
+    // carteira (cookie); `address` aqui só decide quando buscar/re-buscar.
+    fetch("/api/plans/status")
       .then((res) => res.json())
       .then((data: { status: SellerPlanStatus }) => {
         if (cancelled) return;
