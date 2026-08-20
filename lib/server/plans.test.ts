@@ -31,7 +31,7 @@ const STARTER = {
   monthlyPriceReais: 0,
   feePercent: 4.5,
   includedEscrows: null,
-  maxTxValueReais: 5000,
+  maxTxValueReais: null,
   isNegotiated: false,
 };
 
@@ -42,7 +42,7 @@ const PRO = {
   monthlyPriceReais: 197,
   feePercent: 2.5,
   includedEscrows: 10,
-  maxTxValueReais: 20000,
+  maxTxValueReais: null,
   isNegotiated: false,
 };
 
@@ -144,22 +144,22 @@ describe("resolveFeeForNewEscrow — decide a taxa aplicada a um escrow novo", (
   });
 });
 
-describe("getMaxTxValueForSeller — limite de valor por pedido do plano", () => {
+describe("getMaxTxValueForSeller — nenhum plano limita valor por pedido hoje", () => {
   it("sem sellerAddress, sem limite (não dá pra saber o plano)", async () => {
     expect(await getMaxTxValueForSeller(undefined)).toBeNull();
   });
 
-  it("Starter limita em R$5.000", async () => {
+  it("Starter sem limite", async () => {
     sellerSubscriptionFindUnique.mockResolvedValueOnce(null);
-    expect(await getMaxTxValueForSeller(SELLER)).toBe(5000);
+    expect(await getMaxTxValueForSeller(SELLER)).toBeNull();
   });
 
-  it("Pro dentro do período pago limita em R$20.000", async () => {
+  it("Pro dentro do período pago sem limite", async () => {
     sellerSubscriptionFindUnique.mockResolvedValueOnce({ currentPeriodEnd: inFuture(24), plan: PRO });
-    expect(await getMaxTxValueForSeller(SELLER)).toBe(20000);
+    expect(await getMaxTxValueForSeller(SELLER)).toBeNull();
   });
 
-  it("Enterprise não tem limite", async () => {
+  it("Enterprise sem limite", async () => {
     sellerSubscriptionFindUnique.mockResolvedValueOnce({ currentPeriodEnd: inFuture(24), plan: ENTERPRISE });
     expect(await getMaxTxValueForSeller(SELLER)).toBeNull();
   });

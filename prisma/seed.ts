@@ -14,7 +14,7 @@ const PLAN_SEEDS = [
     monthlyPriceReais: 0,
     feePercent: 4.5,
     includedEscrows: null,
-    maxTxValueReais: 5000,
+    maxTxValueReais: null,
     isNegotiated: false,
   },
   {
@@ -23,7 +23,7 @@ const PLAN_SEEDS = [
     monthlyPriceReais: 197,
     feePercent: 2.5,
     includedEscrows: 10,
-    maxTxValueReais: 20000,
+    maxTxValueReais: null,
     isNegotiated: false,
   },
   {
