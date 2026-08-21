@@ -1359,7 +1359,12 @@ footer[id] {
 }
 .calc-results {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* minmax(0, 1fr), não só 1fr — sem isso, um valor grande no Starter/Pro
+     (ex: R$ 24.375,00 no preset de R$ 25.000) força essa coluna a crescer
+     além da divisão igual, espremendo a coluna do Enterprise e fazendo
+     "Taxas personalizadas por volume" quebrar em mais linhas — os três
+     cards ficam maiores dependendo do valor/perfil selecionado. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 .calc-result {
@@ -1383,6 +1388,7 @@ footer[id] {
 .calc-fee {
   font-size: 12.5px;
   color: var(--on-surface-variant);
+  white-space: nowrap;
 }
 .calc-net {
   font-size: 24px;
@@ -1390,6 +1396,7 @@ footer[id] {
   letter-spacing: -0.02em;
   color: var(--primary);
   margin-top: 4px;
+  white-space: nowrap;
 }
 .calc-net-sm {
   font-size: 18px;
