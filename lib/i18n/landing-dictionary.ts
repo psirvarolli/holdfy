@@ -338,6 +338,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           price: "R$ 197",
           suffix: "por mês + 2,5% por transação",
           features: [
+            "Tudo do plano Starter",
             "Taxa de 2,5% em qualquer volume",
             "Contratos com marcos de entrega (milestones)",
             "Mediação de disputas inclusa",
@@ -619,6 +620,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           price: "R$ 197",
           suffix: "por mes + 2,5% por transacción",
           features: [
+            "Todo lo del plan Starter",
             "Tarifa de 2,5% en cualquier volumen",
             "Contratos con hitos de entrega (milestones)",
             "Mediación de disputas incluida",
@@ -900,6 +902,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           price: "R$197",
           suffix: "per month + 2.5% per transaction",
           features: [
+            "Everything in Starter",
             "2.5% fee at any volume",
             "Contracts with delivery milestones",
             "Dispute mediation included",
