@@ -34,7 +34,6 @@ export function FeeCalculator() {
   const clamped = Math.min(Math.max(value || 0, 0), 1000000);
   const starterNet = clamped * (1 - STARTER_RATE);
   const proNet = clamped * (1 - PRO_RATE);
-  const activePresetIndex = PRESET_META.findIndex((p) => p.value === clamped);
   const role = calculator.presets[profileIndex]?.role ?? calculator.presets[0].role;
   const title = calculator.title.replace("{role}", role);
   const netLabel = calculator.netLabel.replace("{role}", role);
@@ -62,7 +61,7 @@ export function FeeCalculator() {
               <button
                 key={p.key}
                 type="button"
-                className={`preset-chip ${activePresetIndex === i ? "active" : ""}`}
+                className={`preset-chip ${profileIndex === i ? "active" : ""}`}
                 onClick={() => {
                   setValue(meta.value);
                   setProfileIndex(i);
