@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Briefcase, Building2, Calculator, Handshake, Store } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
 import { useLandingLocale } from "@/lib/landing-locale-context";
 import { landingDictionary } from "@/lib/i18n/landing-dictionary";
 
@@ -21,15 +20,16 @@ const PRESET_META = [
 const STARTER_RATE = 0.045;
 const PRO_RATE = 0.025;
 
-// formatCurrency("R$ 47.750,00") pode chegar a 13 caracteres no valor máximo
-// do input (R$1.000.000) — no tamanho base de 24px isso quebra linha no meio
-// do número (overflow-wrap:anywhere no CSS evita vazar do card, mas ainda
-// fica feio). Encolhe a fonte um pouco a cada faixa de dígitos extras pra
-// manter o número numa linha só na grande maioria dos casos.
-function priceFontSize(formatted: string): number {
-  if (formatted.length <= 11) return 24;
-  if (formatted.length === 12) return 21;
-  return 19;
+// Arredonda pra reais inteiros, sem centavos — é só uma simulação (o valor
+// exato de centavos não importa aqui), e encurtar o número o suficiente pra
+// caber no card num tamanho de fonte padrão, sem precisar de lógica extra
+// pra medir/encolher a fonte em valores altos.
+function formatWhole(value: number): string {
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  });
 }
 
 export function FeeCalculator() {
@@ -45,8 +45,6 @@ export function FeeCalculator() {
   const clamped = Math.min(Math.max(value || 0, 0), 1000000);
   const starterNet = clamped * (1 - STARTER_RATE);
   const proNet = clamped * (1 - PRO_RATE);
-  const starterNetFormatted = formatCurrency(starterNet);
-  const proNetFormatted = formatCurrency(proNet);
   const role = calculator.presets[profileIndex]?.role ?? calculator.presets[0].role;
   const title = calculator.title.replace("{role}", role);
   const netLabel = calculator.netLabel.replace("{role}", role);
@@ -119,28 +117,20 @@ export function FeeCalculator() {
         <div className="calc-result" data-testid="fee-result-starter">
           <span className="label-md calc-plan">{calculator.starterLabel}</span>
           <span className="calc-fee">
-            {calculator.feePrefix} {formatCurrency(clamped * STARTER_RATE)}
+            {calculator.feePrefix} {formatWhole(clamped * STARTER_RATE)}
           </span>
-          <span
-            className="calc-net"
-            style={{ fontSize: priceFontSize(starterNetFormatted) }}
-            data-testid="fee-net-starter"
-          >
-            {starterNetFormatted}
+          <span className="calc-net" data-testid="fee-net-starter">
+            {formatWhole(starterNet)}
           </span>
           <span className="calc-net-label">{netLabel}</span>
         </div>
         <div className="calc-result featured" data-testid="fee-result-pro">
           <span className="label-md calc-plan">{calculator.proLabel}</span>
           <span className="calc-fee">
-            {calculator.feePrefix} {formatCurrency(clamped * PRO_RATE)}
+            {calculator.feePrefix} {formatWhole(clamped * PRO_RATE)}
           </span>
-          <span
-            className="calc-net"
-            style={{ fontSize: priceFontSize(proNetFormatted) }}
-            data-testid="fee-net-pro"
-          >
-            {proNetFormatted}
+          <span className="calc-net" data-testid="fee-net-pro">
+            {formatWhole(proNet)}
           </span>
           <span className="calc-net-label">{netLabel}</span>
         </div>
@@ -151,7 +141,7 @@ export function FeeCalculator() {
           <span className="calc-net-label">{calculator.enterpriseNetLabel}</span>
         </div>
         <div className="calc-savings" data-testid="fee-savings">
-          {savingsPrefix} <strong>{formatCurrency(proNet - starterNet)}</strong> {calculator.savingsSuffix}
+          {savingsPrefix} <strong>{formatWhole(proNet - starterNet)}</strong> {calculator.savingsSuffix}
         </div>
       </div>
     </div>
