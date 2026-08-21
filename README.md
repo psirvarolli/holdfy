@@ -49,8 +49,12 @@ running on Stellar **testnet** — see [Status](#status) below.
 - **Dispute flow**: either party can open a dispute, respond with their side
   and upload evidence (photos/videos); the admin panel resolves it with a
   2-of-2 signed transaction.
-- **Seller plans** (Starter / Pro / Enterprise) with different per-transaction
-  fees, monthly included escrow quotas, and per-order value limits.
+- **In-app notifications** for order-status changes (payment confirmed,
+  shipped, disputed, released) — scoped to each recipient's own session, not
+  a shared feed.
+- **Seller plans** (Starter / Pro / Enterprise) with different flat
+  per-transaction fees — no monthly quotas or per-order value caps; Pro also
+  carries a fixed monthly subscription, charged through InfinitePay.
 - **Admin panel** (`/admin`) for dispute resolution and viewing the landing
   page's early-access waitlist, behind its own password-based session
   (independent of Pollar).
@@ -91,6 +95,15 @@ the bot can create orders on their behalf.
   private/authenticated read mode, so the ciphertext is the only thing that
   protects it) — independent of whatever retention Neon itself provides.
   See `scripts/decrypt-backup.mjs` to restore from a snapshot.
+- **SSRF protection** — the marketplace-lookup endpoint resolves the target
+  host's DNS before fetching and refuses private/reserved IP ranges (and
+  re-validates on every redirect hop), instead of letting the server fetch
+  whatever URL a client supplies.
+- **Payment webhook replay protection** — a completed InfinitePay payment
+  stays reported as paid indefinitely on their side; without an idempotency
+  check, resubmitting the same webhook call would extend a seller's Pro
+  subscription again for free. Holdfy tracks the last order reference
+  credited per seller and no-ops on a repeat.
 - **Error monitoring** — Sentry captures server, edge, and client exceptions
   in production.
 - Network selection (`STELLAR_NETWORK=testnet|mainnet`) is a single source of
@@ -185,7 +198,9 @@ tested against a real local Postgres and real generated Stellar keypairs
 respectively (still no network calls to Stellar or Trustless Work). Coverage
 includes the full order lifecycle (create → pay → confirm → ship → receive,
 for both digital and physical goods) end to end, not just each step in
-isolation.
+isolation, plus the admin-route middleware itself (`proxy.test.ts`) — route
+handlers alone can't prove that protection holds, since middleware doesn't
+run when a handler is called directly in a test.
 
 ## Deployment
 
