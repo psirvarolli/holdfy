@@ -1388,6 +1388,7 @@ footer[id] {
 .calc-fee {
   font-size: 12.5px;
   color: var(--on-surface-variant);
+  overflow-wrap: anywhere;
 }
 .calc-net {
   font-size: 24px;
@@ -1395,7 +1396,12 @@ footer[id] {
   letter-spacing: -0.02em;
   color: var(--primary);
   margin-top: 4px;
-  white-space: nowrap;
+  /* formatCurrency (Intl pt-BR) usa um espaço NÃO-QUEBRÁVEL entre "R$" e o
+     número — o navegador nunca quebraria linha ali sozinho, então em valores
+     altos (perto de R$1.000.000) o texto vazava pra fora do card em vez de
+     quebrar. overflow-wrap:anywhere permite quebrar como último recurso,
+     só quando realmente não cabe, sem nunca estourar o container. */
+  overflow-wrap: anywhere;
 }
 .calc-net-sm {
   font-size: 18px;
