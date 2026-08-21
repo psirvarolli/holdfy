@@ -25,11 +25,20 @@ export function FeeCalculator() {
   const { locale } = useLandingLocale();
   const { calculator } = landingDictionary[locale].pricing;
   const [value, setValue] = useState(3500);
+  // Qual perfil (Freelancer/Marketplace/Imobiliária/B2B) dita a palavra usada
+  // no título e nos resultados ("prestador", "vendedor", "corretor"...) — só
+  // muda quando um chip é clicado, não quando o valor sai de um preset exato
+  // (arrastar o slider não deve fazer a palavra "piscar" de volta pro padrão).
+  const [profileIndex, setProfileIndex] = useState(0);
 
   const clamped = Math.min(Math.max(value || 0, 0), 1000000);
   const starterNet = clamped * (1 - STARTER_RATE);
   const proNet = clamped * (1 - PRO_RATE);
   const activePresetIndex = PRESET_META.findIndex((p) => p.value === clamped);
+  const role = calculator.presets[profileIndex]?.role ?? calculator.presets[0].role;
+  const title = calculator.title.replace("{role}", role);
+  const netLabel = calculator.netLabel.replace("{role}", role);
+  const savingsPrefix = calculator.savingsPrefix.replace("{role}", role);
 
   return (
     <div className="calc-card" data-testid="fee-calculator">
@@ -38,7 +47,7 @@ export function FeeCalculator() {
           <Calculator size={22} />
         </span>
         <h3 className="title-md" style={{ margin: "0 0 8px" }}>
-          {calculator.title}
+          {title}
         </h3>
         <p className="body-md" style={{ margin: "0 0 24px", color: "var(--on-surface-variant)" }}>
           {calculator.subtitle}
@@ -54,7 +63,10 @@ export function FeeCalculator() {
                 key={p.key}
                 type="button"
                 className={`preset-chip ${activePresetIndex === i ? "active" : ""}`}
-                onClick={() => setValue(meta.value)}
+                onClick={() => {
+                  setValue(meta.value);
+                  setProfileIndex(i);
+                }}
                 data-testid={`fee-preset-${p.key}`}
               >
                 <meta.icon size={14} />
@@ -100,7 +112,7 @@ export function FeeCalculator() {
           <span className="calc-net" data-testid="fee-net-starter">
             {formatCurrency(starterNet)}
           </span>
-          <span className="calc-net-label">{calculator.netLabel}</span>
+          <span className="calc-net-label">{netLabel}</span>
         </div>
         <div className="calc-result featured" data-testid="fee-result-pro">
           <span className="label-md calc-plan">{calculator.proLabel}</span>
@@ -110,7 +122,7 @@ export function FeeCalculator() {
           <span className="calc-net" data-testid="fee-net-pro">
             {formatCurrency(proNet)}
           </span>
-          <span className="calc-net-label">{calculator.netLabel}</span>
+          <span className="calc-net-label">{netLabel}</span>
         </div>
         <div className="calc-result muted" data-testid="fee-result-enterprise">
           <span className="label-md calc-plan">{calculator.enterpriseLabel}</span>
@@ -119,7 +131,7 @@ export function FeeCalculator() {
           <span className="calc-net-label">{calculator.enterpriseNetLabel}</span>
         </div>
         <div className="calc-savings" data-testid="fee-savings">
-          {calculator.savingsPrefix} <strong>{formatCurrency(proNet - starterNet)}</strong> {calculator.savingsSuffix}
+          {savingsPrefix} <strong>{formatCurrency(proNet - starterNet)}</strong> {calculator.savingsSuffix}
         </div>
       </div>
     </div>
