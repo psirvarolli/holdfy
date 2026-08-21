@@ -184,8 +184,10 @@ model Plan {
   monthlyPriceReais Float // mensalidade em R$; 0 pro Starter, negociado (não cobrado por aqui) no Enterprise
   feePercent        Float // taxa da Holdfy sobre cada escrow, neste plano
   // Quantos escrows por mês a mensalidade já cobre antes de cair na taxa do
-  // Starter (ver resolveFeeForNewEscrow) — null = sem contagem (Starter é
-  // sempre pay-as-you-go; Enterprise é sempre ilimitado).
+  // Starter (ver resolveFeeForNewEscrow) — null = sem cota, taxa fixa em
+  // qualquer volume. Nenhum plano usa isso hoje (o Pro já foi pay-as-you-go
+  // com cota, mas virou taxa fixa); o mecanismo fica pronto caso um plano
+  // futuro volte a precisar de um limite mensal incluído.
   includedEscrows   Int?
   // Valor máximo (R$) de um único pedido nesse plano — null = sem limite.
   maxTxValueReais   Float?

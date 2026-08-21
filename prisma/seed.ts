@@ -22,7 +22,7 @@ const PLAN_SEEDS = [
     name: "Pro",
     monthlyPriceReais: 197,
     feePercent: 2.5,
-    includedEscrows: 10,
+    includedEscrows: null,
     maxTxValueReais: null,
     isNegotiated: false,
   },

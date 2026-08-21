@@ -41,7 +41,7 @@ const PRO = {
   name: "Pro",
   monthlyPriceReais: 197,
   feePercent: 2.5,
-  includedEscrows: 10,
+  includedEscrows: null,
   maxTxValueReais: null,
   isNegotiated: false,
 };
@@ -104,24 +104,14 @@ describe("resolveFeeForNewEscrow — decide a taxa aplicada a um escrow novo", (
     expect(orderCount).not.toHaveBeenCalled(); // Starter não conta uso mensal
   });
 
-  it("vendedor com plano Pro dentro do período pago e da cota mensal usa a taxa do Pro", async () => {
+  it("vendedor Pro dentro do período pago sempre usa a taxa do Pro, em qualquer volume", async () => {
     sellerSubscriptionFindUnique.mockResolvedValueOnce({
       currentPeriodEnd: inFuture(24),
       plan: PRO,
     });
-    orderCount.mockResolvedValueOnce(9); // já usou 9 dos 10 incluídos
     const result = await resolveFeeForNewEscrow(SELLER);
     expect(result).toEqual({ feePercent: 2.5, planSlug: "pro" });
-  });
-
-  it("vendedor Pro que já passou da cota mensal cai na taxa do Starter (excedente)", async () => {
-    sellerSubscriptionFindUnique.mockResolvedValueOnce({
-      currentPeriodEnd: inFuture(24),
-      plan: PRO,
-    });
-    orderCount.mockResolvedValueOnce(10);
-    const result = await resolveFeeForNewEscrow(SELLER);
-    expect(result).toEqual({ feePercent: 4.5, planSlug: "starter" });
+    expect(orderCount).not.toHaveBeenCalled(); // Pro não tem mais cota mensal pra contar
   });
 
   it("vendedor Enterprise nunca conta uso — sempre a taxa negociada", async () => {
@@ -180,7 +170,7 @@ describe("getActivePlanForSeller", () => {
 });
 
 describe("getSellerPlanStatus — o que a tela de Configurações mostra", () => {
-  it("status 'active' e uso mensal quando o Pro está dentro do período pago e da cota", async () => {
+  it("status 'active' e sem excedente quando o Pro está dentro do período pago (sem cota mensal)", async () => {
     const periodEnd = inFuture(24);
     // mockResolvedValue (não "Once"): getSellerPlanStatus consulta a
     // assinatura mais de uma vez internamente (inclusive dentro de
@@ -188,24 +178,13 @@ describe("getSellerPlanStatus — o que a tela de Configurações mostra", () =>
     // cobrada) — é sempre o mesmo registro, então o mock deve valer pra
     // qualquer número de chamadas.
     sellerSubscriptionFindUnique.mockResolvedValue({ currentPeriodEnd: periodEnd, plan: PRO });
-    orderCount.mockResolvedValue(3);
 
     const status = await getSellerPlanStatus(SELLER);
     expect(status.plan.slug).toBe("pro");
     expect(status.status).toBe("active");
-    expect(status.escrowsUsedThisMonth).toBe(3);
-    expect(status.billedFeePercent).toBeUndefined(); // dentro da cota — sem excedente
-  });
-
-  it("estourou a cota mensal do Pro: billedFeePercent aparece com a taxa do Starter", async () => {
-    const periodEnd = inFuture(24);
-    sellerSubscriptionFindUnique.mockResolvedValue({ currentPeriodEnd: periodEnd, plan: PRO });
-    orderCount.mockResolvedValue(10); // já usou os 10 incluídos
-
-    const status = await getSellerPlanStatus(SELLER);
-    expect(status.plan.slug).toBe("pro"); // continua Pro — só a taxa do próximo pedido muda
-    expect(status.escrowsUsedThisMonth).toBe(10);
-    expect(status.billedFeePercent).toBe(STARTER.feePercent);
+    expect(status.escrowsUsedThisMonth).toBeUndefined(); // sem cota — nada pra contar
+    expect(status.billedFeePercent).toBeUndefined(); // taxa fixa em qualquer volume
+    expect(orderCount).not.toHaveBeenCalled();
   });
 
   it("status 'expired' quando o último pagamento já venceu", async () => {

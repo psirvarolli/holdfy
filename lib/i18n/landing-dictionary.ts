@@ -338,8 +338,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           price: "R$ 197",
           suffix: "por mês + 2,5% por transação",
           features: [
-            "10 escrows por mês incluídos",
-            "Excedente do mês cobrado na taxa do Starter (4,5%)",
+            "Taxa de 2,5% em qualquer volume",
             "Contratos com marcos de entrega (milestones)",
             "Mediação de disputas inclusa",
             "Suporte prioritário",
@@ -620,8 +619,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           price: "R$ 197",
           suffix: "por mes + 2,5% por transacción",
           features: [
-            "10 escrows por mes incluidos",
-            "Excedente del mes cobrado a la tarifa del Starter (4,5%)",
+            "Tarifa de 2,5% en cualquier volumen",
             "Contratos con hitos de entrega (milestones)",
             "Mediación de disputas incluida",
             "Soporte prioritario",
@@ -902,8 +900,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           price: "R$197",
           suffix: "per month + 2.5% per transaction",
           features: [
-            "10 escrows per month included",
-            "Overage billed at the Starter rate (4.5%)",
+            "2.5% fee at any volume",
             "Contracts with delivery milestones",
             "Dispute mediation included",
             "Priority support",
