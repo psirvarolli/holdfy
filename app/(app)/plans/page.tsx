@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRole } from "@/lib/role-context";
-import { usePlans, useSellerPlanStatus, subscribeToPro } from "@/lib/plans-client";
+import { usePlans, useSellerPlanStatus, subscribeToPro, cancelProSubscription } from "@/lib/plans-client";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Plan } from "@/lib/types";
 
@@ -21,6 +21,8 @@ function PlanCard({
   canSubscribe,
   onSubscribe,
   isSubscribing,
+  onCancel,
+  isCancelling,
 }: {
   plan: Plan;
   isCurrent: boolean;
@@ -28,6 +30,8 @@ function PlanCard({
   canSubscribe: boolean;
   onSubscribe: () => void;
   isSubscribing: boolean;
+  onCancel: () => void;
+  isCancelling: boolean;
 }) {
   return (
     <Card className="flex flex-col gap-4">
@@ -89,6 +93,11 @@ function PlanCard({
           {isSubscribing ? <Loader2 className="size-4 animate-spin" /> : null}
           {isSubscribing ? "Redirecionando..." : isCurrent ? "Renovar" : "Assinar"}
         </Button>
+      ) : plan.slug === "starter" && canSubscribe && !isCurrent ? (
+        <Button variant="outline" onClick={onCancel} disabled={isCancelling}>
+          {isCancelling ? <Loader2 className="size-4 animate-spin" /> : null}
+          {isCancelling ? "Voltando..." : "Voltar para o Starter"}
+        </Button>
       ) : isCurrent ? (
         <Button variant="outline" disabled>
           Plano atual
@@ -104,6 +113,7 @@ export default function PlansPage() {
   const { plans, isLoading: isLoadingPlans } = usePlans();
   const { status, isLoading: isLoadingStatus, refresh } = useSellerPlanStatus();
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Lê a query string direto (sem useSearchParams) pra não precisar embrulhar
   // a página inteira num <Suspense> só por causa desse detalhe de retorno do
@@ -127,6 +137,19 @@ export default function PlansPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao iniciar a assinatura.");
       setSubscribingSlug(null);
+    }
+  }
+
+  async function handleCancel() {
+    setError(null);
+    setIsCancelling(true);
+    try {
+      await cancelProSubscription();
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao voltar para o Starter.");
+    } finally {
+      setIsCancelling(false);
     }
   }
 
@@ -201,6 +224,8 @@ export default function PlansPage() {
               canSubscribe={isSeller}
               onSubscribe={() => void handleSubscribe(plan)}
               isSubscribing={subscribingSlug === plan.slug}
+              onCancel={() => void handleCancel()}
+              isCancelling={isCancelling}
             />
           ))}
         </div>

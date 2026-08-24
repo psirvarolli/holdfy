@@ -123,6 +123,19 @@ export async function recordProPayment(
   return decoded;
 }
 
+// Não existe "assinatura" de verdade do lado da InfinitePay (é só um link de
+// pagamento avulso, sem cobrança recorrente) — então "voltar pro Starter"
+// não é cancelar nada remotamente, é só marcar o período pago como já
+// vencido. Sem custo pra desfazer: não há reembolso, o vendedor simplesmente
+// para de renovar. updateMany (não update) porque também precisa ser um
+// no-op seguro pra quem nunca assinou o Pro.
+export async function cancelProSubscription(sellerAddress: string): Promise<void> {
+  await prisma.sellerSubscription.updateMany({
+    where: { sellerAddress },
+    data: { currentPeriodEnd: new Date() },
+  });
+}
+
 export async function getActivePlanForSeller(sellerAddress: string): Promise<DbPlan> {
   const subscription = await getActiveSubscription(sellerAddress);
   return subscription?.plan ?? (await getStarterPlan());

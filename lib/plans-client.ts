@@ -81,3 +81,11 @@ export async function subscribeToPro(): Promise<string> {
   }
   return data.url;
 }
+
+export async function cancelProSubscription(): Promise<void> {
+  const res = await fetch("/api/plans/cancel", { method: "POST" });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Falha ao voltar para o Starter.");
+  }
+}

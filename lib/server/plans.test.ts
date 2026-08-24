@@ -4,12 +4,17 @@ const planFindMany = vi.fn();
 const planFindUnique = vi.fn();
 const sellerSubscriptionFindUnique = vi.fn();
 const sellerSubscriptionUpsert = vi.fn();
+const sellerSubscriptionUpdateMany = vi.fn();
 const orderCount = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     plan: { findMany: planFindMany, findUnique: planFindUnique },
-    sellerSubscription: { findUnique: sellerSubscriptionFindUnique, upsert: sellerSubscriptionUpsert },
+    sellerSubscription: {
+      findUnique: sellerSubscriptionFindUnique,
+      upsert: sellerSubscriptionUpsert,
+      updateMany: sellerSubscriptionUpdateMany,
+    },
     order: { count: orderCount },
   },
 }));
@@ -22,6 +27,7 @@ const {
   getSellerPlanStatus,
   encodeProOrderNsu,
   recordProPayment,
+  cancelProSubscription,
 } = await import("./plans");
 
 const STARTER = {
@@ -283,5 +289,22 @@ describe("encodeProOrderNsu / recordProPayment — confirmação de pagamento do
     await recordProPayment(secondOrderNsu, "slug-2");
 
     expect(sellerSubscriptionUpsert).toHaveBeenCalledOnce();
+  });
+});
+
+describe("cancelProSubscription — botão \"Voltar para o Starter\"", () => {
+  it("marca o período pago como já vencido, pra cair no Starter na próxima checagem", async () => {
+    await cancelProSubscription(SELLER);
+
+    expect(sellerSubscriptionUpdateMany).toHaveBeenCalledOnce();
+    const call = sellerSubscriptionUpdateMany.mock.calls[0][0];
+    expect(call.where).toEqual({ sellerAddress: SELLER });
+    // <= new Date() é o que getActiveSubscription usa pra considerar
+    // vencido — não pode ser um instante no futuro por engano.
+    expect(call.data.currentPeriodEnd.getTime()).toBeLessThanOrEqual(Date.now());
+  });
+
+  it("é um no-op seguro pra quem nunca assinou o Pro (updateMany não acha nenhuma linha)", async () => {
+    await expect(cancelProSubscription(SELLER)).resolves.toBeUndefined();
   });
 });
