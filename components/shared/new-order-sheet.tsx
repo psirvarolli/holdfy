@@ -34,7 +34,6 @@ export function NewOrderSheet() {
   const [itemName, setItemName] = useState("");
   const [price, setPrice] = useState("");
   const [hasShipping, setHasShipping] = useState(true);
-  const [shippingCost, setShippingCost] = useState("");
 
   const priceValue = Number(price.replace(",", "."));
   const isValid = counterpartyName.trim().length > 0 && itemName.trim().length > 0 && priceValue > 0;
@@ -44,7 +43,6 @@ export function NewOrderSheet() {
     setItemName("");
     setPrice("");
     setHasShipping(true);
-    setShippingCost("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -56,7 +54,7 @@ export function NewOrderSheet() {
       itemName: itemName.trim(),
       price: priceValue,
       hasShipping,
-      shippingCost: hasShipping ? Number(shippingCost.replace(",", ".")) || 0 : 0,
+      shippingCost: 0,
     });
 
     resetForm();
@@ -145,34 +143,18 @@ export function NewOrderSheet() {
             ) : null}
           </div>
 
-          <div className={cn("grid gap-3", hasShipping ? "grid-cols-2" : "grid-cols-1")}>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="price" className="text-label-sm text-on-surface-variant">
-                Valor (R$)
-              </label>
-              <Input
-                id="price"
-                inputMode="decimal"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="0,00"
-                required
-              />
-            </div>
-            {hasShipping ? (
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="shippingCost" className="text-label-sm text-on-surface-variant">
-                  Frete (R$)
-                </label>
-                <Input
-                  id="shippingCost"
-                  inputMode="decimal"
-                  value={shippingCost}
-                  onChange={(e) => setShippingCost(e.target.value)}
-                  placeholder="0,00"
-                />
-              </div>
-            ) : null}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="price" className="text-label-sm text-on-surface-variant">
+              Valor (R$)
+            </label>
+            <Input
+              id="price"
+              inputMode="decimal"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="0,00"
+              required
+            />
           </div>
 
           <Button type="submit" size="lg" disabled={!isValid} className="mt-2">
