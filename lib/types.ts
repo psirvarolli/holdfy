@@ -1,5 +1,11 @@
 export type UserRole = "comprador" | "vendedor";
 
+// Prazo depois do envio pra um pedido físico virar elegível pra liberação
+// automática (ver lib/server/orders.ts). Fica aqui, não em lib/server/, só
+// porque a tela de admin também precisa dele pra filtrar a lista de
+// elegíveis no cliente — lib/types.ts não tem nenhum import server-only.
+export const AUTO_RELEASE_DAYS = 15;
+
 export interface User {
   id: string;
   name: string;
@@ -80,6 +86,14 @@ export interface Order {
   disputeBuyerAmount?: number;
   disputeSellerAmount?: number;
   disputeResolvedAt?: string;
+  // Quando o vendedor marcou o pedido como enviado — só existe pra pedidos
+  // físicos que já passaram por essa etapa. Usado pra calcular quando o
+  // pedido vira elegível pra liberação automática (ver AUTO_RELEASE_DAYS e
+  // isEligibleForAutoRelease abaixo).
+  shippedAt?: string;
+  // Quando (se) a liberação automática por prazo aconteceu — distinto de
+  // disputeResolvedAt de propósito, não é uma disputa.
+  autoReleasedAt?: string;
   // Taxa da Holdfy realmente aplicada neste escrow (depende do plano do
   // vendedor no momento do deploy) — undefined até o pedido ser pago.
   appliedFeePercent?: number;
@@ -89,6 +103,15 @@ export interface Order {
   appliedPlanSlug?: PlanSlug;
 
   evidence: OrderEvidence[];
+}
+
+// Mesma checagem que lib/server/orders.ts faz (assertEligibleForAutoRelease)
+// antes de mover dinheiro de verdade — aqui só decide se a tela do admin
+// mostra o pedido na lista/painel de liberação, não é a fonte de verdade.
+export function isEligibleForAutoRelease(order: Order): boolean {
+  if (order.status !== "em_transito" || !order.hasShipping || !order.shippedAt) return false;
+  const daysSinceShipped = (Date.now() - new Date(order.shippedAt).getTime()) / (24 * 60 * 60 * 1000);
+  return daysSinceShipped >= AUTO_RELEASE_DAYS;
 }
 
 export type EvidenceStage = "envio" | "recebimento";

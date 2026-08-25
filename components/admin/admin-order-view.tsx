@@ -6,9 +6,10 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { DisputeResolutionPanel } from "@/components/shared/dispute-resolution-panel";
+import { AutoReleasePanel } from "@/components/admin/auto-release-panel";
 import { EvidenceGallery } from "@/components/shared/evidence-gallery";
 import { formatCurrency, formatDate } from "@/lib/format";
-import type { Order } from "@/lib/types";
+import { isEligibleForAutoRelease, type Order } from "@/lib/types";
 
 export function AdminOrderView({ id }: { id: string }) {
   const [order, setOrder] = useState<Order | null>(null);
@@ -118,6 +119,8 @@ export function AdminOrderView({ id }: { id: string }) {
       {order.status === "em_disputa" ? (
         <DisputeResolutionPanel order={order} onResolved={setOrder} />
       ) : null}
+
+      {isEligibleForAutoRelease(order) ? <AutoReleasePanel order={order} onResolved={setOrder} /> : null}
     </div>
   );
 }

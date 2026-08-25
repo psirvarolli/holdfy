@@ -76,6 +76,16 @@ model Order {
   disputeBuyerAmount   Float?
   disputeSellerAmount  Float?
   disputeResolvedAt    DateTime?
+  // Quando o vendedor marcou o pedido como enviado (status vira em_transito) —
+  // usado só pra contar o prazo da liberação automática (ver AUTO_RELEASE_DAYS
+  // em lib/server/orders.ts). Pedidos já em em_transito antes desse campo
+  // existir ficam com shippedAt null e não entram na liberação automática até
+  // serem reenviados.
+  shippedAt            DateTime?
+  // Quando (se) a liberação automática por prazo aconteceu — separado de
+  // disputeResolvedAt de propósito: não é uma disputa, é ausência de resposta
+  // do comprador, e misturar os dois confundiria a tela de detalhes do pedido.
+  autoReleasedAt       DateTime?
   // Quando o escrow é implantado (deploy), não antes — usado pra contar quantos
   // escrows um vendedor usou no mês corrente (ver lib/server/plans.ts). Não dá
   // pra usar `createdAt` pra isso: o pedido pode ter sido criado num mês e só

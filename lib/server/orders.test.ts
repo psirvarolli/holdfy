@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { AUTO_RELEASE_DAYS } from "@/lib/types";
 import type {
   Order as DbOrder,
   OrderItem as DbOrderItem,
@@ -32,6 +33,8 @@ const waitForEscrowState = vi.fn();
 const deploySingleReleaseEscrow = vi.fn();
 const buildFundEscrow = vi.fn();
 const completeMilestoneAsPlatform = vi.fn();
+const buildResolveDisputeTransaction = vi.fn();
+const submitSignedTransaction = vi.fn();
 
 vi.mock("@/lib/server/trustless-work", () => ({
   deploySingleReleaseEscrow,
@@ -40,8 +43,8 @@ vi.mock("@/lib/server/trustless-work", () => ({
   buildApproveMilestone: vi.fn(),
   buildReleaseFunds: vi.fn(),
   buildDisputeEscrow: vi.fn(),
-  buildResolveDisputeTransaction: vi.fn(),
-  submitSignedTransaction: vi.fn(),
+  buildResolveDisputeTransaction,
+  submitSignedTransaction,
   completeMilestoneAsPlatform,
   waitForEscrowState,
 }));
@@ -63,6 +66,8 @@ const {
   cancelOrder,
   buildPaymentTransaction,
   createOrder,
+  buildAutoReleaseForAdmin,
+  submitAutoReleaseForAdmin,
 } = await import("./orders");
 
 type OrderFixture = DbOrder & {
@@ -99,6 +104,8 @@ function makeOrder(overrides: Partial<OrderFixture> = {}): OrderFixture {
     disputeBuyerAmount: null,
     disputeSellerAmount: null,
     disputeResolvedAt: null,
+    shippedAt: null,
+    autoReleasedAt: null,
     escrowDeployedAt: null,
     appliedFeePercent: null,
     appliedPlanSlug: null,
@@ -267,6 +274,87 @@ describe("confirmReceipt — verifica a liberação on-chain antes de gravar", (
       "vendedor",
       order.sellerAddress,
       expect.stringContaining("liberado")
+    );
+  });
+});
+
+describe("buildAutoReleaseForAdmin / submitAutoReleaseForAdmin — liberação por prazo", () => {
+  const HOUR = 60 * 60 * 1000;
+  const overdueShippedAt = new Date(Date.now() - (AUTO_RELEASE_DAYS + 1) * 24 * HOUR);
+  const recentShippedAt = new Date(Date.now() - (AUTO_RELEASE_DAYS - 1) * 24 * HOUR);
+
+  it("build recusa quando o pedido não está em_transito", async () => {
+    findFirst.mockResolvedValueOnce(makeOrder({ status: "pago_custodia", shippedAt: overdueShippedAt }));
+    await expect(buildAutoReleaseForAdmin("order-1")).rejects.toThrow(
+      "não está aguardando confirmação"
+    );
+    expect(buildResolveDisputeTransaction).not.toHaveBeenCalled();
+  });
+
+  it("build recusa produto digital (hasShipping false nunca passa por em_transito de verdade)", async () => {
+    findFirst.mockResolvedValueOnce(
+      makeOrder({ status: "em_transito", hasShipping: false, shippedAt: overdueShippedAt })
+    );
+    await expect(buildAutoReleaseForAdmin("order-1")).rejects.toThrow(
+      "não está aguardando confirmação"
+    );
+  });
+
+  it("build recusa quando ainda não passaram os dias do prazo", async () => {
+    findFirst.mockResolvedValueOnce(makeOrder({ status: "em_transito", shippedAt: recentShippedAt }));
+    await expect(buildAutoReleaseForAdmin("order-1")).rejects.toThrow(
+      `Ainda não passaram os ${AUTO_RELEASE_DAYS} dias`
+    );
+    expect(buildResolveDisputeTransaction).not.toHaveBeenCalled();
+  });
+
+  it("build monta a transação com 100% pro vendedor quando elegível", async () => {
+    const order = makeOrder({ status: "em_transito", shippedAt: overdueShippedAt });
+    findFirst.mockResolvedValueOnce(order);
+    buildResolveDisputeTransaction.mockResolvedValueOnce({ partiallySignedTransaction: "xdr-parcial" });
+
+    const result = await buildAutoReleaseForAdmin("order-1");
+
+    expect(buildResolveDisputeTransaction).toHaveBeenCalledWith(order.escrowContractId, [
+      { address: order.sellerAddress, amount: order.escrowAmountUsdc },
+    ]);
+    expect(result).toEqual({ partiallySignedTransaction: "xdr-parcial" });
+  });
+
+  it("submit recusa de novo se o estado mudou entre o build e o submit (ex: comprador confirmou sozinho)", async () => {
+    findFirst.mockResolvedValueOnce(makeOrder({ status: "liberado", shippedAt: overdueShippedAt }));
+    await expect(submitAutoReleaseForAdmin("order-1", "xdr-completo")).rejects.toThrow(
+      "não está aguardando confirmação"
+    );
+    expect(submitSignedTransaction).not.toHaveBeenCalled();
+  });
+
+  it("submit envia a transação, grava status liberado + autoReleasedAt e notifica as duas partes", async () => {
+    const order = makeOrder({ status: "em_transito", shippedAt: overdueShippedAt });
+    findFirst.mockResolvedValueOnce(order);
+    findFirst.mockResolvedValueOnce(makeOrder({ status: "liberado" }));
+
+    await submitAutoReleaseForAdmin("order-1", "xdr-completo");
+
+    expect(submitSignedTransaction).toHaveBeenCalledWith("xdr-completo");
+    expect(transaction).toHaveBeenCalled();
+    expect(orderUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "order-1" },
+        data: expect.objectContaining({ status: "liberado", autoReleasedAt: expect.any(Date) }),
+      })
+    );
+    expect(createNotification).toHaveBeenCalledWith(
+      "order-1",
+      "comprador",
+      order.buyerAddress,
+      expect.stringContaining("liberado automaticamente")
+    );
+    expect(createNotification).toHaveBeenCalledWith(
+      "order-1",
+      "vendedor",
+      order.sellerAddress,
+      expect.stringContaining("liberado automaticamente")
     );
   });
 });

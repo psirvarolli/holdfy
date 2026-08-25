@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { label: "Disputas", href: "/admin/disputes" },
+  { label: "Liberação Automática", href: "/admin/auto-release" },
   { label: "Lista de Espera", href: "/admin/leads" },
 ];
 

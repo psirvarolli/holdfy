@@ -15,6 +15,7 @@ import {
 import { convertBrlToUsdc } from "@/lib/server/fx-rate";
 import { createNotification } from "@/lib/server/notifications";
 import { resolveFeeForNewEscrow, getMaxTxValueForSeller } from "@/lib/server/plans";
+import { AUTO_RELEASE_DAYS } from "@/lib/types";
 import type {
   Order,
   OrderStatus,
@@ -94,6 +95,8 @@ function toApiOrder(order: OrderWithRelations): Order {
     disputeBuyerAmount: order.disputeBuyerAmount ?? undefined,
     disputeSellerAmount: order.disputeSellerAmount ?? undefined,
     disputeResolvedAt: order.disputeResolvedAt?.toISOString(),
+    shippedAt: order.shippedAt?.toISOString(),
+    autoReleasedAt: order.autoReleasedAt?.toISOString(),
     appliedFeePercent: order.appliedFeePercent ?? undefined,
     appliedPlanSlug: (order.appliedPlanSlug as PlanSlug | null) ?? undefined,
     evidence: order.evidence.map((item) => ({
@@ -577,7 +580,11 @@ export async function markShipped(id: string, trackingCode: string): Promise<Ord
   await prisma.$transaction([
     prisma.order.update({
       where: { id: order.id },
-      data: { status: "em_transito", trackingCode: trackingCode || order.trackingCode },
+      data: {
+        status: "em_transito",
+        trackingCode: trackingCode || order.trackingCode,
+        shippedAt: new Date(),
+      },
     }),
     ...stepUpdates,
   ]);
@@ -727,6 +734,88 @@ export async function submitDisputeResolutionForAdmin(
   const resolvedMessage = `A disputa do pedido ${order.displayId} foi resolvida pela Holdfy.`;
   await createNotification(order.id, "comprador", order.buyerAddress, resolvedMessage);
   await createNotification(order.id, "vendedor", order.sellerAddress, resolvedMessage);
+
+  return getOrder(order.id);
+}
+
+function daysSince(date: Date): number {
+  return (Date.now() - date.getTime()) / (24 * 60 * 60 * 1000);
+}
+
+// Reaproveita o mesmo caminho de assinatura 2-de-2 da resolução de disputa
+// (buildResolveDisputeTransaction/submitSignedTransaction acima), só que a
+// divisão é sempre fixa em 100% pro vendedor — isso não é uma disputa, é
+// ausência de resposta do comprador depois do prazo. Guarda server-side,
+// chamada tanto no build quanto no submit: nunca confia só no filtro da
+// tela do admin, e o estado do pedido pode mudar no intervalo entre os dois
+// passos (ex: o comprador confirma o recebimento sozinho nesse meio-tempo).
+function assertEligibleForAutoRelease(
+  order: NonNullable<Awaited<ReturnType<typeof findByIdOrDisplayId>>>
+) {
+  if (!order.escrowContractId || !order.buyerAddress || !order.sellerAddress || !order.escrowAmountUsdc) {
+    throw new Error("Este pedido não tem um escrow completo (faltam carteiras, contrato ou valor).");
+  }
+  if (!order.hasShipping || order.status !== "em_transito") {
+    throw new Error("Este pedido não está aguardando confirmação de recebimento.");
+  }
+  if (!order.shippedAt || daysSince(order.shippedAt) < AUTO_RELEASE_DAYS) {
+    throw new Error(`Ainda não passaram os ${AUTO_RELEASE_DAYS} dias desde o envio.`);
+  }
+}
+
+export async function buildAutoReleaseForAdmin(
+  id: string
+): Promise<{ partiallySignedTransaction: string } | null> {
+  const order = await findByIdOrDisplayId(id);
+  if (!order) return null;
+  assertEligibleForAutoRelease(order);
+
+  return twBuildResolveDisputeTransaction(order.escrowContractId!, [
+    { address: order.sellerAddress!, amount: order.escrowAmountUsdc! },
+  ]);
+}
+
+export async function submitAutoReleaseForAdmin(
+  id: string,
+  signedTransaction: string
+): Promise<Order | null> {
+  const order = await findByIdOrDisplayId(id);
+  if (!order) return null;
+  assertEligibleForAutoRelease(order);
+
+  await submitSignedTransaction(signedTransaction);
+
+  const now = formatTimelineTimestamp(new Date());
+  const stepUpdates = order.timeline.flatMap((step) => {
+    if (step.stepId === "entregue") {
+      return [
+        prisma.orderTimelineStep.update({
+          where: { id: step.id },
+          data: {
+            state: "concluido",
+            description: `Liberado automaticamente após ${AUTO_RELEASE_DAYS} dias sem confirmação nem contestação.`,
+            timestamp: now,
+          },
+        }),
+      ];
+    }
+    if (step.state === "atual") {
+      return [prisma.orderTimelineStep.update({ where: { id: step.id }, data: { state: "concluido" } })];
+    }
+    return [];
+  });
+
+  await prisma.$transaction([
+    prisma.order.update({
+      where: { id: order.id },
+      data: { status: "liberado", autoReleasedAt: new Date() },
+    }),
+    ...stepUpdates,
+  ]);
+
+  const message = `O pedido ${order.displayId} foi liberado automaticamente após ${AUTO_RELEASE_DAYS} dias sem confirmação nem contestação do comprador.`;
+  await createNotification(order.id, "comprador", order.buyerAddress, message);
+  await createNotification(order.id, "vendedor", order.sellerAddress, message);
 
   return getOrder(order.id);
 }
