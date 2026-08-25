@@ -8,6 +8,7 @@ import type {
 } from "@prisma/client";
 
 const findFirst = vi.fn();
+const findMany = vi.fn();
 const orderUpdate = vi.fn();
 const orderCount = vi.fn();
 const orderCreate = vi.fn();
@@ -18,6 +19,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     order: {
       findFirst,
+      findMany,
       update: orderUpdate,
       count: orderCount,
       create: orderCreate,
@@ -68,6 +70,9 @@ const {
   createOrder,
   buildAutoReleaseForAdmin,
   submitAutoReleaseForAdmin,
+  listOrdersNeedingAutoReleaseNudge,
+  daysUntilAutoRelease,
+  markAutoReleaseNudgeProcessed,
 } = await import("./orders");
 
 type OrderFixture = DbOrder & {
@@ -106,6 +111,7 @@ function makeOrder(overrides: Partial<OrderFixture> = {}): OrderFixture {
     disputeResolvedAt: null,
     shippedAt: null,
     autoReleasedAt: null,
+    shipReminderSentAt: null,
     escrowDeployedAt: null,
     appliedFeePercent: null,
     appliedPlanSlug: null,
@@ -355,6 +361,52 @@ describe("buildAutoReleaseForAdmin / submitAutoReleaseForAdmin — liberação p
       "vendedor",
       order.sellerAddress,
       expect.stringContaining("liberado automaticamente")
+    );
+  });
+});
+
+describe("listOrdersNeedingAutoReleaseNudge / daysUntilAutoRelease / markAutoReleaseNudgeProcessed — lembrete antes do prazo", () => {
+  const HOUR = 60 * 60 * 1000;
+
+  it("busca pedidos em_transito, físicos, sem lembrete enviado, dentro da janela do prazo", async () => {
+    findMany.mockResolvedValueOnce([]);
+
+    await listOrdersNeedingAutoReleaseNudge();
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: "em_transito",
+          hasShipping: true,
+          shipReminderSentAt: null,
+          shippedAt: expect.objectContaining({ not: null, lte: expect.any(Date) }),
+        }),
+      })
+    );
+    // A janela é alguns dias antes do prazo total — nem o prazo inteiro
+    // (senão o lembrete nunca chegaria antes da liberação) nem zero.
+    const call = findMany.mock.calls[0][0];
+    const thresholdDaysAgo = (Date.now() - call.where.shippedAt.lte.getTime()) / (24 * HOUR);
+    expect(thresholdDaysAgo).toBeGreaterThan(0);
+    expect(thresholdDaysAgo).toBeLessThan(AUTO_RELEASE_DAYS);
+  });
+
+  it("daysUntilAutoRelease conta certo pra um envio recente", () => {
+    expect(daysUntilAutoRelease(new Date().toISOString())).toBe(AUTO_RELEASE_DAYS);
+  });
+
+  it("daysUntilAutoRelease nunca fica negativo, mesmo já passado o prazo", () => {
+    const longAgo = new Date(Date.now() - (AUTO_RELEASE_DAYS + 10) * 24 * HOUR).toISOString();
+    expect(daysUntilAutoRelease(longAgo)).toBe(0);
+  });
+
+  it("markAutoReleaseNudgeProcessed grava shipReminderSentAt", async () => {
+    await markAutoReleaseNudgeProcessed("order-1");
+    expect(orderUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "order-1" },
+        data: { shipReminderSentAt: expect.any(Date) },
+      })
     );
   });
 });

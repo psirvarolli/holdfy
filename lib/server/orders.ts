@@ -819,3 +819,44 @@ export async function submitAutoReleaseForAdmin(
 
   return getOrder(order.id);
 }
+
+// Quantos dias antes do prazo de liberação automática o lembrete por
+// WhatsApp é disparado (ver /api/internal/whatsapp-nudge). Só usado do lado
+// do servidor — nenhuma tela hoje precisa saber disso, diferente de
+// AUTO_RELEASE_DAYS (que a tela de admin usa pra filtrar a lista).
+const AUTO_RELEASE_NUDGE_DAYS_BEFORE = 3;
+
+// Pedidos físicos enviados há tempo suficiente pra entrar na janela do
+// lembrete (AUTO_RELEASE_DAYS - AUTO_RELEASE_NUDGE_DAYS_BEFORE dias atrás),
+// que ainda não foram processados pelo cron do lembrete. Chamado só pela
+// rota de cron — não precisa do padrão isEligibleForAutoRelease (que é pro
+// filtro da tela do admin), a query já faz o filtro certo direto no banco.
+export async function listOrdersNeedingAutoReleaseNudge(): Promise<Order[]> {
+  const nudgeThreshold = new Date(
+    Date.now() - (AUTO_RELEASE_DAYS - AUTO_RELEASE_NUDGE_DAYS_BEFORE) * 24 * 60 * 60 * 1000
+  );
+  const orders = await prisma.order.findMany({
+    where: {
+      status: "em_transito",
+      hasShipping: true,
+      shippedAt: { not: null, lte: nudgeThreshold },
+      shipReminderSentAt: null,
+    },
+    include: includeRelations,
+  });
+  return orders.map(toApiOrder);
+}
+
+// Quantos dias faltam até a liberação automática deste pedido — usado só
+// pra preencher a variável da mensagem de lembrete ("você tem até N dias").
+export function daysUntilAutoRelease(shippedAt: string): number {
+  return Math.max(0, Math.round(AUTO_RELEASE_DAYS - daysSince(new Date(shippedAt))));
+}
+
+// Marca o lembrete como processado (enviado, ou não dava pra enviar por um
+// motivo permanente, ex: sem buyerPhone) — ver o comentário do campo
+// shipReminderSentAt no schema pra quando NÃO chamar isto (falha temporária,
+// deve tentar de novo no dia seguinte).
+export async function markAutoReleaseNudgeProcessed(id: string): Promise<void> {
+  await prisma.order.update({ where: { id }, data: { shipReminderSentAt: new Date() } });
+}

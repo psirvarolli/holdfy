@@ -3,6 +3,10 @@
     {
       "path": "/api/internal/backup",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/internal/whatsapp-nudge",
+      "schedule": "0 12 * * *"
     }
   ]
 }

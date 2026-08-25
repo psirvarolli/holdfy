@@ -86,6 +86,13 @@ model Order {
   // disputeResolvedAt de propósito: não é uma disputa, é ausência de resposta
   // do comprador, e misturar os dois confundiria a tela de detalhes do pedido.
   autoReleasedAt       DateTime?
+  // Quando o lembrete de confirmação (WhatsApp, alguns dias antes da
+  // liberação automática) foi processado pra este pedido — marcado mesmo
+  // quando não dava pra mandar (ex: sem buyerPhone cadastrado), só pra o
+  // cron não ficar reavaliando o mesmo pedido todo dia. Continua null se o
+  // envio falhou por um motivo temporário, pra tentar de novo no dia
+  // seguinte (ver /api/internal/whatsapp-nudge).
+  shipReminderSentAt   DateTime?
   // Quando o escrow é implantado (deploy), não antes — usado pra contar quantos
   // escrows um vendedor usou no mês corrente (ver lib/server/plans.ts). Não dá
   // pra usar `createdAt` pra isso: o pedido pode ter sido criado num mês e só
