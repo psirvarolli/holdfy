@@ -164,7 +164,8 @@ Set these in `.env`:
 | `HOLDFY_PLATFORM_SECRET_KEY` / `HOLDFY_PLATFORM_PUBLIC_KEY` | Platform Stellar keypair — signs SEP-10 challenges and platform-side escrow actions |
 | `HOLDFY_DISPUTE_RESOLVER_SECRET_KEY` / `HOLDFY_DISPUTE_RESOLVER_PUBLIC_KEY` | 2-of-2 dispute-resolution signing account |
 | `ADMIN_SESSION_SECRET` / `ADMIN_PASSWORD` | Admin panel login |
-| `HOLDFY_BOT_API_SECRET` | Shared secret for the WhatsApp bot's server-to-server calls |
+| `HOLDFY_BOT_API_SECRET` | Shared secret for the WhatsApp bot's server-to-server calls (both directions) |
+| `WHATSAPP_BOT_BASE_URL` | The WhatsApp bot's public URL — used to trigger the auto-release reminder |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob (evidence uploads, backups) |
 | `CRON_SECRET` / `BACKUP_ENCRYPTION_KEY` | Daily backup job auth + encryption key |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Error monitoring |
