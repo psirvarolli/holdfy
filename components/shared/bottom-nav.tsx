@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/components/shared/nav-items";
+import { useRole } from "@/lib/role-context";
 import { cn } from "@/lib/utils";
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { role } = useRole();
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-outline-variant bg-surface-container-low md:hidden">
       <ul className="flex items-stretch justify-around">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {NAV_ITEMS.filter((item) => !item.sellerOnly || role === "vendedor").map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href);
           return (
             <li key={href} className="flex-1">
