@@ -36,7 +36,12 @@ function usePollarAppConfig(): PollarConfig {
       accentColor: "#008675",
       logoUrl: theme === "light" ? "/holdfy-icon.svg" : "/holdfy-icon-white.svg",
       emailEnabled: true,
-      embeddedWallets: true,
+      // Desligado de propósito: o público da Holdfy não conhece carteira
+      // cripto, e o botão "Wallet" (conectar uma carteira externa já
+      // existente) só cria atrito — a carteira de cada um já é criada
+      // automaticamente por trás do login por e-mail/Google, sem precisar
+      // dessa opção separada.
+      embeddedWallets: false,
       providers: { google: true, discord: false, x: false, github: false, apple: false },
     },
   };
