@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import {
   Sheet,
   SheetTrigger,
@@ -34,6 +34,8 @@ export function NewOrderSheet() {
   const [itemName, setItemName] = useState("");
   const [price, setPrice] = useState("");
   const [hasShipping, setHasShipping] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const priceValue = Number(price.replace(",", "."));
   const isValid = counterpartyName.trim().length > 0 && itemName.trim().length > 0 && priceValue > 0;
@@ -43,23 +45,32 @@ export function NewOrderSheet() {
     setItemName("");
     setPrice("");
     setHasShipping(true);
+    setError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isValid) return;
 
-    const order = await createOrder({
-      counterpartyName: counterpartyName.trim(),
-      itemName: itemName.trim(),
-      price: priceValue,
-      hasShipping,
-      shippingCost: 0,
-    });
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const order = await createOrder({
+        counterpartyName: counterpartyName.trim(),
+        itemName: itemName.trim(),
+        price: priceValue,
+        hasShipping,
+        shippingCost: 0,
+      });
 
-    resetForm();
-    setOpen(false);
-    router.push(`/orders/${order.id}`);
+      resetForm();
+      setOpen(false);
+      router.push(`/orders/${order.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível criar o pedido. Tente de novo.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -157,8 +168,11 @@ export function NewOrderSheet() {
             />
           </div>
 
-          <Button type="submit" size="lg" disabled={!isValid} className="mt-2">
-            Criar Pedido
+          {error ? <p className="text-label-sm text-error">{error}</p> : null}
+
+          <Button type="submit" size="lg" disabled={!isValid || isSubmitting} className="mt-2">
+            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
+            {isSubmitting ? "Criando..." : "Criar Pedido"}
           </Button>
         </form>
       </SheetContent>

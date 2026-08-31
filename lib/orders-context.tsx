@@ -51,7 +51,8 @@ async function postJson<T>(url: string, body?: unknown): Promise<T> {
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
-    throw new Error(`Falha na requisição para ${url}: ${res.status}`);
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? `Falha na requisição para ${url} (${res.status}).`);
   }
   return res.json();
 }
