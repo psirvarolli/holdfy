@@ -52,7 +52,7 @@ running on Stellar **testnet** — see [Status](#status) below.
 - **In-app notifications** for order-status changes (payment confirmed,
   shipped, disputed, released) — scoped to each recipient's own session, not
   a shared feed.
-- **Seller plans** (Starter / Pro / Enterprise) with different flat
+- **Seller plans** (Starter / Pro) with different flat
   per-transaction fees — no monthly quotas or per-order value caps; Pro also
   carries a fixed monthly subscription, charged through InfinitePay.
 - **Admin panel** (`/admin`) for dispute resolution and viewing the landing

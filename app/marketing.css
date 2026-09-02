@@ -918,9 +918,11 @@ footer[id] {
 /* Pricing */
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
   align-items: stretch;
+  max-width: 720px;
+  margin: 0 auto;
 }
 .plan-card {
   display: flex;
@@ -1359,12 +1361,10 @@ footer[id] {
 }
 .calc-results {
   display: grid;
-  /* minmax(0, 1fr), não só 1fr — sem isso, um valor grande no Starter/Pro
-     (ex: R$ 24.375,00 no preset de R$ 25.000) força essa coluna a crescer
-     além da divisão igual, espremendo a coluna do Enterprise e fazendo
-     "Taxas personalizadas por volume" quebrar em mais linhas — os três
-     cards ficam maiores dependendo do valor/perfil selecionado. */
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* minmax(0, 1fr), não só 1fr — sem isso, um valor grande (ex: R$ 24.375,00
+     no preset de R$ 25.000) força a coluna correspondente a crescer além da
+     divisão igual entre os dois cards. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 .calc-result {
@@ -1378,9 +1378,6 @@ footer[id] {
 .calc-result.featured {
   border: 2px solid var(--primary);
   background: var(--mint-muted);
-}
-.calc-result.muted {
-  background: var(--surface-low);
 }
 .calc-plan {
   color: var(--on-surface);
@@ -1402,10 +1399,6 @@ footer[id] {
      quebrar. overflow-wrap:anywhere permite quebrar como último recurso,
      só quando realmente não cabe, sem nunca estourar o container. */
   overflow-wrap: anywhere;
-}
-.calc-net-sm {
-  font-size: 18px;
-  color: var(--on-surface);
 }
 .calc-net-label {
   font-size: 12px;

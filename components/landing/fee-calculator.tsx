@@ -134,12 +134,6 @@ export function FeeCalculator() {
           </span>
           <span className="calc-net-label">{netLabel}</span>
         </div>
-        <div className="calc-result muted" data-testid="fee-result-enterprise">
-          <span className="label-md calc-plan">{calculator.enterpriseLabel}</span>
-          <span className="calc-fee">{calculator.enterpriseFee}</span>
-          <span className="calc-net calc-net-sm">{calculator.enterpriseNet}</span>
-          <span className="calc-net-label">{calculator.enterpriseNetLabel}</span>
-        </div>
         <div className="calc-savings" data-testid="fee-savings">
           {savingsPrefix} <strong>{formatWhole(proNet - starterNet)}</strong> {calculator.savingsSuffix}
         </div>

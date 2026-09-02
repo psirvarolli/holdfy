@@ -15,10 +15,8 @@ function toApiPlan(plan: DbPlan): Plan {
   };
 }
 
-// Ordem de exibição fixa por tier — não dá pra ordenar por
-// monthlyPriceReais porque Starter e Enterprise empatam em R$0 (o preço do
-// Enterprise é negociado à parte), o que deixava a ordem instável.
-const PLAN_DISPLAY_ORDER: Record<PlanSlug, number> = { starter: 0, pro: 1, enterprise: 2 };
+// Ordem de exibição fixa por tier.
+const PLAN_DISPLAY_ORDER: Record<PlanSlug, number> = { starter: 0, pro: 1 };
 
 export async function listPlans(): Promise<Plan[]> {
   const plans = await prisma.plan.findMany();
@@ -32,8 +30,8 @@ export async function getPlanBySlug(slug: PlanSlug) {
 }
 
 // Starter é o plano implícito: todo vendedor sem assinatura ativa cai nele,
-// sem precisar de nenhuma linha em SellerSubscription — só quem paga por um
-// plano melhor (Pro) ou negocia diretamente (Enterprise) tem um registro ali.
+// sem precisar de nenhuma linha em SellerSubscription — só quem paga pelo
+// Pro tem um registro ali.
 async function getStarterPlan() {
   const plan = await prisma.plan.findUnique({ where: { slug: "starter" } });
   if (!plan) throw new Error("Plano Starter não encontrado — rode o seed do banco.");
@@ -167,7 +165,7 @@ export async function resolveFeeForNewEscrow(
   const plan = await getActivePlanForSeller(sellerAddress);
 
   if (plan.includedEscrows == null) {
-    // Starter (sempre pay-as-you-go) ou Enterprise (ilimitado) — sem contagem.
+    // Starter é sempre pay-as-you-go — sem contagem.
     return { feePercent: plan.feePercent, planSlug: plan.slug as PlanSlug };
   }
 
@@ -182,7 +180,7 @@ export async function resolveFeeForNewEscrow(
 }
 
 // Limite de valor por pedido do plano ativo — null quando o plano não impõe
-// limite (Enterprise, ou vendedor ainda sem carteira/plano identificado).
+// limite, ou quando o vendedor ainda não tem carteira/plano identificado.
 export async function getMaxTxValueForSeller(
   sellerAddress: string | null | undefined
 ): Promise<number | null> {

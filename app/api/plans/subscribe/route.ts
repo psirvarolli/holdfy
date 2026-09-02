@@ -5,9 +5,8 @@ import { getPlanBySlug, encodeProOrderNsu } from "@/lib/server/plans";
 import { planSlug, parseJsonBody } from "@/lib/server/validation";
 import { getSessionAddress } from "@/lib/server/wallet-session";
 
-// Só o Pro tem link de pagamento automático — Starter não cobra nada e
-// Enterprise é negociado diretamente com a Holdfy (botão "Fale conosco" na
-// tela de Planos), sem gerar link nenhum aqui.
+// Só o Pro tem link de pagamento automático — Starter não cobra nada, sem
+// gerar link nenhum aqui.
 const schema = z.object({
   planSlug: planSlug.refine((slug) => slug === "pro", "Este plano não tem pagamento automático."),
 });

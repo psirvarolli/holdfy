@@ -52,17 +52,6 @@ const PRO = {
   isNegotiated: false,
 };
 
-const ENTERPRISE = {
-  id: "plan-enterprise",
-  slug: "enterprise",
-  name: "Enterprise",
-  monthlyPriceReais: 0,
-  feePercent: 1.8,
-  includedEscrows: null,
-  maxTxValueReais: null,
-  isNegotiated: true,
-};
-
 const SELLER = "GSELLER1234567890123456789012345678901234567890123456";
 const HOUR = 60 * 60 * 1000;
 
@@ -79,21 +68,17 @@ beforeEach(() => {
   planFindUnique.mockImplementation(({ where }: { where: { slug?: string } }) => {
     if (where.slug === "starter") return Promise.resolve(STARTER);
     if (where.slug === "pro") return Promise.resolve(PRO);
-    if (where.slug === "enterprise") return Promise.resolve(ENTERPRISE);
     return Promise.resolve(null);
   });
 });
 
 describe("listPlans — ordem de exibição na tela de Planos", () => {
-  it("mostra sempre Starter, Pro, Enterprise, mesmo que o banco devolva em outra ordem", async () => {
-    // Starter e Enterprise empatam em monthlyPriceReais (R$0) — o banco pode
-    // devolver em qualquer ordem entre eles; a exibição não pode depender
-    // disso.
-    planFindMany.mockResolvedValueOnce([ENTERPRISE, STARTER, PRO]);
+  it("mostra sempre Starter, Pro, mesmo que o banco devolva em outra ordem", async () => {
+    planFindMany.mockResolvedValueOnce([PRO, STARTER]);
 
     const plans = await listPlans();
 
-    expect(plans.map((p) => p.slug)).toEqual(["starter", "pro", "enterprise"]);
+    expect(plans.map((p) => p.slug)).toEqual(["starter", "pro"]);
   });
 });
 
@@ -120,16 +105,6 @@ describe("resolveFeeForNewEscrow — decide a taxa aplicada a um escrow novo", (
     expect(orderCount).not.toHaveBeenCalled(); // Pro não tem mais cota mensal pra contar
   });
 
-  it("vendedor Enterprise nunca conta uso — sempre a taxa negociada", async () => {
-    sellerSubscriptionFindUnique.mockResolvedValueOnce({
-      currentPeriodEnd: inFuture(24),
-      plan: ENTERPRISE,
-    });
-    const result = await resolveFeeForNewEscrow(SELLER);
-    expect(result).toEqual({ feePercent: 1.8, planSlug: "enterprise" });
-    expect(orderCount).not.toHaveBeenCalled();
-  });
-
   it("plano Pro com o período pago já vencido não conta — volta pro Starter", async () => {
     sellerSubscriptionFindUnique.mockResolvedValueOnce({
       currentPeriodEnd: inPast(1), // venceu há 1 hora
@@ -152,11 +127,6 @@ describe("getMaxTxValueForSeller — nenhum plano limita valor por pedido hoje",
 
   it("Pro dentro do período pago sem limite", async () => {
     sellerSubscriptionFindUnique.mockResolvedValueOnce({ currentPeriodEnd: inFuture(24), plan: PRO });
-    expect(await getMaxTxValueForSeller(SELLER)).toBeNull();
-  });
-
-  it("Enterprise sem limite", async () => {
-    sellerSubscriptionFindUnique.mockResolvedValueOnce({ currentPeriodEnd: inFuture(24), plan: ENTERPRISE });
     expect(await getMaxTxValueForSeller(SELLER)).toBeNull();
   });
 });

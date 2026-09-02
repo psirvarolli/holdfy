@@ -26,15 +26,6 @@ const PLAN_SEEDS = [
     maxTxValueReais: null,
     isNegotiated: false,
   },
-  {
-    slug: "enterprise",
-    name: "Enterprise",
-    monthlyPriceReais: 0,
-    feePercent: 1.8,
-    includedEscrows: null,
-    maxTxValueReais: null,
-    isNegotiated: true,
-  },
 ] as const;
 
 async function main() {

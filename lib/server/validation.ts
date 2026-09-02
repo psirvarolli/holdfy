@@ -18,7 +18,7 @@ export const e164Phone = z
 export const evidenceStage = z.enum(["envio", "recebimento"]);
 export const evidenceType = z.enum(["foto", "video"]);
 
-export const planSlug = z.enum(["starter", "pro", "enterprise"]);
+export const planSlug = z.enum(["starter", "pro"]);
 
 // Reais (R$) — usado tanto para preços de pedido quanto para distribuição de
 // disputa. Zero é permitido só onde faz sentido (ex: frete grátis), então

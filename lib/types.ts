@@ -98,7 +98,7 @@ export interface Order {
   // vendedor no momento do deploy) — undefined até o pedido ser pago.
   appliedFeePercent?: number;
   // Plano usado pra calcular appliedFeePercent — "starter" pode ser um
-  // vendedor Starter de verdade, ou um Pro/Enterprise em excedente (ver
+  // vendedor Starter de verdade, ou um Pro em excedente (ver
   // resolveFeeForNewEscrow em lib/server/plans.ts).
   appliedPlanSlug?: PlanSlug;
 
@@ -127,7 +127,7 @@ export interface OrderEvidence {
   createdAt: string;
 }
 
-export type PlanSlug = "starter" | "pro" | "enterprise";
+export type PlanSlug = "starter" | "pro";
 
 export interface Plan {
   slug: PlanSlug;

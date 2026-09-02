@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePollar } from "@pollar/react";
-import { CheckCircle2, Loader2, Mail, RefreshCw } from "lucide-react";
+import { CheckCircle2, Loader2, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,6 @@ import { useRole } from "@/lib/role-context";
 import { usePlans, useSellerPlanStatus, subscribeToPro, cancelProSubscription } from "@/lib/plans-client";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Plan } from "@/lib/types";
-
-const ENTERPRISE_CONTACT_EMAIL = "contato@holdfyai.com.br";
 
 function PlanCard({
   plan,
@@ -42,11 +40,9 @@ function PlanCard({
 
       <div>
         <span className="text-headline-lg-mobile text-on-surface">
-          {plan.isNegotiated ? "Sob consulta" : formatCurrency(plan.monthlyPriceReais)}
+          {formatCurrency(plan.monthlyPriceReais)}
         </span>
-        {!plan.isNegotiated ? (
-          <span className="text-body-md text-on-surface-variant"> /mês</span>
-        ) : null}
+        <span className="text-body-md text-on-surface-variant"> /mês</span>
       </div>
 
       <div className="flex flex-col gap-2 border-t border-outline-variant pt-4 text-body-md text-on-surface-variant">
@@ -75,20 +71,7 @@ function PlanCard({
         </p>
       ) : null}
 
-      {plan.isNegotiated ? (
-        isCurrent ? (
-          <Button variant="outline" disabled>
-            Plano atual
-          </Button>
-        ) : (
-          <Button variant="outline" asChild>
-            <a href={`mailto:${ENTERPRISE_CONTACT_EMAIL}?subject=${encodeURIComponent("Plano Enterprise Holdfy")}`}>
-              <Mail className="size-4" />
-              Fale conosco
-            </a>
-          </Button>
-        )
-      ) : plan.slug === "pro" && canSubscribe ? (
+      {plan.slug === "pro" && canSubscribe ? (
         <Button onClick={onSubscribe} disabled={isSubscribing} variant={isCurrent ? "outline" : "primary"}>
           {isSubscribing ? <Loader2 className="size-4 animate-spin" /> : null}
           {isSubscribing ? "Redirecionando..." : isCurrent ? "Renovar" : "Assinar"}
@@ -214,7 +197,7 @@ export default function PlansPage() {
           <Loader2 className="size-6 animate-spin text-on-surface-variant" />
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           {plans.map((plan) => (
             <PlanCard
               key={plan.slug}

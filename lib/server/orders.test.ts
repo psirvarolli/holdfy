@@ -568,7 +568,7 @@ describe("createOrder — respeita o limite de valor por pedido do plano do vend
     expect(orderCreate).toHaveBeenCalled();
   });
 
-  it("sem limite no plano (ex: Enterprise), aceita qualquer valor", async () => {
+  it("sem limite no plano, aceita qualquer valor", async () => {
     getMaxTxValueForSeller.mockResolvedValueOnce(null);
     orderCount.mockResolvedValueOnce(0);
     orderCreate.mockResolvedValueOnce(makeOrder({ total: 999999 }));

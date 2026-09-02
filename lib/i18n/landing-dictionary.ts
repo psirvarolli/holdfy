@@ -126,12 +126,8 @@ export interface LandingDictionary {
       rangeMax: string;
       starterLabel: string;
       proLabel: string;
-      enterpriseLabel: string;
       feePrefix: string;
-      enterpriseFee: string;
       netLabel: string;
-      enterpriseNet: string;
-      enterpriseNetLabel: string;
       savingsPrefix: string;
       savingsSuffix: string;
     };
@@ -346,19 +342,6 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           ],
           cta: "Assinar o Pro",
         },
-        {
-          name: "Enterprise",
-          audience: "Para marketplaces e operações em escala",
-          price: "Sob consulta",
-          suffix: "taxas personalizadas por volume",
-          features: [
-            "API e webhooks para integração",
-            "White-label com a sua marca",
-            "Gestor de conta dedicado",
-            "SLA e suporte a compliance",
-          ],
-          cta: "Falar com vendas",
-        },
       ],
       calculator: {
         title: "Quanto {role} recebe?",
@@ -375,12 +358,8 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         rangeMax: "R$ 50.000",
         starterLabel: "Starter · 4,5%",
         proLabel: "Pro · 2,5%",
-        enterpriseLabel: "Enterprise",
         feePrefix: "Taxa Holdfy:",
-        enterpriseFee: "Taxas personalizadas por volume",
         netLabel: "{role} recebe",
-        enterpriseNet: "Sob consulta",
-        enterpriseNetLabel: "fale com vendas",
         savingsPrefix: "Com o Pro, {role} economiza",
         savingsSuffix: "por transação em relação ao Starter.",
       },
@@ -403,7 +382,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         },
         {
           q: "Quais são as taxas?",
-          a: "No plano Starter, cobramos 4,5% sobre o valor da transação, somente quando ela é concluída. Os planos Pro e Enterprise têm taxas menores e recursos adicionais. Não há mensalidade para começar.",
+          a: "No plano Starter, cobramos 4,5% sobre o valor da transação, somente quando ela é concluída. O plano Pro tem taxa menor e recursos adicionais. Não há mensalidade para começar.",
         },
         {
           q: "É seguro?",
@@ -628,19 +607,6 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           ],
           cta: "Suscribirme al Pro",
         },
-        {
-          name: "Enterprise",
-          audience: "Para marketplaces y operaciones a gran escala",
-          price: "Bajo consulta",
-          suffix: "tarifas personalizadas por volumen",
-          features: [
-            "API y webhooks para integración",
-            "White-label con tu marca",
-            "Gestor de cuenta dedicado",
-            "SLA y soporte de compliance",
-          ],
-          cta: "Hablar con ventas",
-        },
       ],
       calculator: {
         title: "¿Cuánto recibe {role}?",
@@ -657,12 +623,8 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         rangeMax: "R$ 50.000",
         starterLabel: "Starter · 4,5%",
         proLabel: "Pro · 2,5%",
-        enterpriseLabel: "Enterprise",
         feePrefix: "Tarifa Holdfy:",
-        enterpriseFee: "Tarifas personalizadas por volumen",
         netLabel: "recibe {role}",
-        enterpriseNet: "Bajo consulta",
-        enterpriseNetLabel: "habla con ventas",
         savingsPrefix: "Con el Pro, {role} ahorra",
         savingsSuffix: "por transacción respecto al Starter.",
       },
@@ -685,7 +647,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         },
         {
           q: "¿Cuáles son las tarifas?",
-          a: "En el plan Starter cobramos 4,5% sobre el valor de la transacción, solo cuando se concluye. Los planes Pro y Enterprise tienen tarifas menores y recursos adicionales. No hay mensualidad para empezar.",
+          a: "En el plan Starter cobramos 4,5% sobre el valor de la transacción, solo cuando se concluye. El plan Pro tiene tarifa menor y recursos adicionales. No hay mensualidad para empezar.",
         },
         {
           q: "¿Es seguro?",
@@ -910,19 +872,6 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           ],
           cta: "Subscribe to Pro",
         },
-        {
-          name: "Enterprise",
-          audience: "For marketplaces and operations at scale",
-          price: "Custom",
-          suffix: "volume-based pricing",
-          features: [
-            "API and webhooks for integration",
-            "White-label with your own brand",
-            "Dedicated account manager",
-            "SLA and compliance support",
-          ],
-          cta: "Talk to sales",
-        },
       ],
       calculator: {
         title: "How much does {role} actually receive?",
@@ -939,12 +888,8 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         rangeMax: "R$50,000",
         starterLabel: "Starter · 4.5%",
         proLabel: "Pro · 2.5%",
-        enterpriseLabel: "Enterprise",
         feePrefix: "Holdfy fee:",
-        enterpriseFee: "Custom volume-based pricing",
         netLabel: "{role} receives",
-        enterpriseNet: "Custom",
-        enterpriseNetLabel: "talk to sales",
         savingsPrefix: "With Pro, {role} saves",
         savingsSuffix: "per transaction compared to Starter.",
       },
@@ -967,7 +912,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
         },
         {
           q: "What are the fees?",
-          a: "On the Starter plan, we charge 4.5% of the transaction value, only once it's completed. Pro and Enterprise have lower fees and extra features. There's no monthly fee to get started.",
+          a: "On the Starter plan, we charge 4.5% of the transaction value, only once it's completed. The Pro plan has a lower fee and extra features. There's no monthly fee to get started.",
         },
         {
           q: "Is it safe?",

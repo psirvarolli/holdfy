@@ -12,7 +12,6 @@ import { landingDictionary } from "@/lib/i18n/landing-dictionary";
 const PLAN_META = [
   { featured: false, source: "plano-starter" },
   { featured: true, source: "plano-pro" },
-  { featured: false, source: "plano-enterprise" },
 ];
 
 export function Pricing({ onOpenLead }: { onOpenLead: (source: string) => void }) {

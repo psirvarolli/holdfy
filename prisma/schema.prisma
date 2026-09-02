@@ -104,9 +104,9 @@ model Order {
   // de plano depois.
   appliedFeePercent    Float?
   // Slug do plano usado pra calcular appliedFeePercent — "starter" aqui pode
-  // significar ou que o vendedor é mesmo Starter, ou que é Pro/Enterprise
-  // mas passou da cota mensal e caiu no excedente (cobrado na taxa do
-  // Starter). Sem esse campo, os dois casos ficam indistinguíveis.
+  // significar ou que o vendedor é mesmo Starter, ou que é Pro mas passou da
+  // cota mensal e caiu no excedente (cobrado na taxa do Starter). Sem esse
+  // campo, os dois casos ficam indistinguíveis.
   appliedPlanSlug      String?
 
   items         OrderItem[]
@@ -196,9 +196,9 @@ model OrderEvidence {
 // nenhum pagamento real pra existir.
 model Plan {
   id                String   @id @default(cuid())
-  slug              String   @unique // "starter" | "pro" | "enterprise"
+  slug              String   @unique // "starter" | "pro"
   name              String
-  monthlyPriceReais Float // mensalidade em R$; 0 pro Starter, negociado (não cobrado por aqui) no Enterprise
+  monthlyPriceReais Float // mensalidade em R$; 0 pro Starter
   feePercent        Float // taxa da Holdfy sobre cada escrow, neste plano
   // Quantos escrows por mês a mensalidade já cobre antes de cair na taxa do
   // Starter (ver resolveFeeForNewEscrow) — null = sem cota, taxa fixa em
@@ -208,8 +208,8 @@ model Plan {
   includedEscrows   Int?
   // Valor máximo (R$) de um único pedido nesse plano — null = sem limite.
   maxTxValueReais   Float?
-  // Enterprise: sem checkout automático, o botão na tela leva pra "Fale
-  // conosco" e a ativação é manual depois da negociação.
+  // Nenhum plano usa isso hoje — fica pronto caso um plano futuro precise de
+  // checkout manual/negociado em vez do link automático da InfinitePay.
   isNegotiated      Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
