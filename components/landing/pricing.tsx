@@ -50,6 +50,9 @@ export function Pricing({ onOpenLead }: { onOpenLead: (source: string) => void }
                     <span className="value">{plan.price}</span>
                     <span className="suffix">{plan.suffix}</span>
                   </div>
+                  <p className="plan-recommendation" data-testid={`plan-recommendation-${plan.name.toLowerCase()}`}>
+                    {plan.recommendation}
+                  </p>
                   <ul className="plan-features">
                     {plan.features.map((f) => (
                       <li key={f}>

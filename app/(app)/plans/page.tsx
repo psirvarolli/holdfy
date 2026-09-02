@@ -12,6 +12,14 @@ import { usePlans, useSellerPlanStatus, subscribeToPro, cancelProSubscription } 
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Plan } from "@/lib/types";
 
+// Recomendação de faturamento por plano — só apresentacional, não vem do
+// banco (Plan não carrega esse dado; não há necessidade de mais uma coluna
+// pra um texto fixo por slug).
+const PLAN_REVENUE_RECOMMENDATION: Partial<Record<Plan["slug"], string>> = {
+  starter: "Ideal para quem fatura até R$10.000/mês",
+  pro: "Ideal para quem fatura acima de R$10.000/mês",
+};
+
 function PlanCard({
   plan,
   isCurrent,
@@ -44,6 +52,12 @@ function PlanCard({
         </span>
         <span className="text-body-md text-on-surface-variant"> /mês</span>
       </div>
+
+      {PLAN_REVENUE_RECOMMENDATION[plan.slug] ? (
+        <p className="rounded-md bg-mint-teal/15 px-3 py-2 text-label-sm font-medium text-primary">
+          {PLAN_REVENUE_RECOMMENDATION[plan.slug]}
+        </p>
+      ) : null}
 
       <div className="flex flex-col gap-2 border-t border-outline-variant pt-4 text-body-md text-on-surface-variant">
         <div className="flex items-center justify-between">

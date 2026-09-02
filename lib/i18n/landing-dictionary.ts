@@ -113,6 +113,7 @@ export interface LandingDictionary {
       audience: string;
       price: string;
       suffix: string;
+      recommendation: string;
       features: string[];
       cta: string;
     }[];
@@ -320,6 +321,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           audience: "Para freelancers e primeiros negócios",
           price: "4,5%",
           suffix: "por transação concluída",
+          recommendation: "Ideal para quem fatura até R$10.000/mês",
           features: [
             "Sem mensalidade — pague só quando receber",
             "Escrow via PIX com liberação por aprovação",
@@ -333,6 +335,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           audience: "Para agências e prestadores frequentes",
           price: "R$ 197",
           suffix: "por mês + 2,5% por transação",
+          recommendation: "Ideal para quem fatura acima de R$10.000/mês",
           features: [
             "Tudo do plano Starter",
             "Taxa de 2,5% em qualquer volume",
@@ -585,6 +588,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           audience: "Para freelancers y primeros negocios",
           price: "4,5%",
           suffix: "por transacción concluida",
+          recommendation: "Ideal para quien factura hasta R$10.000/mes",
           features: [
             "Sin mensualidad — paga solo cuando cobres",
             "Escrow por Pix con liberación por aprobación",
@@ -598,6 +602,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           audience: "Para agencias y prestadores frecuentes",
           price: "R$ 197",
           suffix: "por mes + 2,5% por transacción",
+          recommendation: "Ideal para quien factura más de R$10.000/mes",
           features: [
             "Todo lo del plan Starter",
             "Tarifa de 2,5% en cualquier volumen",
@@ -850,6 +855,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           audience: "For freelancers and first-time deals",
           price: "4.5%",
           suffix: "per completed transaction",
+          recommendation: "Ideal for revenue up to R$10,000/month",
           features: [
             "No monthly fee — pay only when you get paid",
             "Pix escrow with approval-based release",
@@ -863,6 +869,7 @@ export const landingDictionary: Record<Locale, LandingDictionary> = {
           audience: "For agencies and frequent providers",
           price: "R$197",
           suffix: "per month + 2.5% per transaction",
+          recommendation: "Ideal for revenue above R$10,000/month",
           features: [
             "Everything in Starter",
             "2.5% fee at any volume",
