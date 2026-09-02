@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { User, Wallet, Landmark, Palette, Copy, Check, MapPin, Percent, ShieldCheck, ArrowDownToLine, ArrowUpFromLine, RefreshCw, MessageCircle, Pencil, X } from "lucide-react";
+import { User, Wallet, Landmark, Palette, Copy, Check, MapPin, Percent, ShieldCheck, ArrowDownToLine, ArrowUpFromLine, RefreshCw, MessageCircle, Pencil, X, TrendingUp } from "lucide-react";
 import { usePollar } from "@pollar/react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { useTheme } from "@/lib/theme-context";
 import { useUsdcBalance } from "@/lib/pollar-balance";
 import { useSellerPlanStatus } from "@/lib/plans-client";
 import { useSellerWhatsapp, linkSellerWhatsapp, unlinkSellerWhatsapp } from "@/lib/seller-whatsapp-client";
+import { useSellerProfile, saveMonthlyRevenue } from "@/lib/seller-profile-client";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -120,6 +121,107 @@ function WhatsappCard() {
               placeholder="11999998888"
               value={phoneInput}
               onChange={(e) => setPhoneInput(e.target.value)}
+              disabled={saving}
+            />
+            <Button size="sm" onClick={handleSave} disabled={saving}>
+              Salvar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setEditing(false);
+                setError(null);
+              }}
+              disabled={saving}
+            >
+              Cancelar
+            </Button>
+          </div>
+          {error ? <p className="text-label-sm text-error">{error}</p> : null}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function MonthlyRevenueCard() {
+  const { wallet } = usePollar();
+  const { profile, isLoading, refresh } = useSellerProfile();
+  const [editing, setEditing] = useState(false);
+  const [valueInput, setValueInput] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!wallet) {
+      setError("Sua carteira ainda não está pronta. Aguarde um instante e tente de novo.");
+      return;
+    }
+    const value = Number(valueInput.replace(",", "."));
+    if (!Number.isFinite(value) || value < 0) {
+      setError("Valor inválido. Digite só números, ex: 15000 ou 15000,00.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await saveMonthlyRevenue(value);
+      setEditing(false);
+      setValueInput("");
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao salvar o faturamento.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="flex flex-col gap-4">
+      <div className="flex items-center gap-2 text-on-surface">
+        <TrendingUp className="size-5" />
+        <h2 className="text-body-lg font-semibold">Faturamento Mensal</h2>
+      </div>
+      <p className="text-body-md text-on-surface-variant">
+        Quanto sua empresa fatura por mês, em média — ajuda a Holdfy a entender melhor o seu
+        negócio.
+      </p>
+
+      {!editing && profile ? (
+        <div className="flex items-center justify-between rounded-md border border-input-border bg-input px-4 py-3">
+          <span className="text-body-md text-on-surface">
+            {formatCurrency(profile.monthlyRevenueReais)}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setValueInput(String(profile.monthlyRevenueReais));
+              setEditing(true);
+            }}
+          >
+            <Pencil className="size-4" />
+            Trocar
+          </Button>
+        </div>
+      ) : !editing ? (
+        <div className="flex items-center justify-between gap-3 rounded-md bg-surface-container-high px-4 py-3">
+          <span className="text-body-md text-on-surface-variant">
+            {isLoading ? "Carregando..." : "Ainda não informado."}
+          </span>
+          <Button size="sm" onClick={() => setEditing(true)} disabled={isLoading}>
+            Informar
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Input
+              inputMode="decimal"
+              placeholder="0,00"
+              value={valueInput}
+              onChange={(e) => setValueInput(e.target.value)}
               disabled={saving}
             />
             <Button size="sm" onClick={handleSave} disabled={saving}>
@@ -360,6 +462,7 @@ export default function SettingsPage() {
             ) : null}
           </Card>
 
+          <MonthlyRevenueCard />
           <WhatsappCard />
         </>
       )}

@@ -258,6 +258,18 @@ model SellerWhatsapp {
   updatedAt     DateTime @updatedAt
 }
 
+// Faturamento mensal declarado pelo próprio vendedor em /settings — mesmo
+// padrão de SellerWhatsapp (uma linha por carteira, sem conta de usuário
+// real ainda). Hoje é só informativo (não afeta taxa nem plano); existe pra
+// dar à Holdfy visibilidade do porte dos vendedores na base.
+model SellerProfile {
+  id                  String   @id @default(cuid())
+  sellerAddress       String   @unique
+  monthlyRevenueReais Float
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
 // Contador de limite de tentativas (rate limit) persistido no Postgres em
 // vez de memória do processo — necessário porque a Vercel roda funções
 // serverless, então um Map em memória (a implementação anterior) não é
